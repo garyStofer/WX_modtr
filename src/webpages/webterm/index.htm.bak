@@ -1,0 +1,11 @@
+<html>
+<body>
+<p>A Java applet :</p>
+<applet
+	code = "Webterm.class"
+	archive="mxwt102.jar"
+	width = 400
+	height = 200>
+</applet>
+</body>
+</html>

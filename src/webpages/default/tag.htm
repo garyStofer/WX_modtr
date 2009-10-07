@@ -1,0 +1,814 @@
+﻿<html xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
+<head>
+<link href="mx.css" rel="stylesheet" type="text/css">
+<title>Tags</title>
+</head>
+
+<body>
+<div class=pgHdr>Tags<br>
+</div>
+
+Data can be requested from the target board via Tags. Tags can be:
+<ul>
+	<li>Placed in Dynamic Web Pages </li>
+	<li>Sent via UDP messages </li>
+	<li>Sent via the HTTP GET method </li>
+</ul>
+All Tags must have the format: <br>
+%nxx <br>
+Where the &#39;%&#39; character serves as a control code, &#39;n&#39; represents the <b>variable 
+group</b>, and &quot;xx&quot; represents a two-digit <b>variable value</b> ( in upper case 
+hex format). <br>
+The <b>variable value</b> has a range of 00-FF (Which translates to 0-255 
+decimal), and must use upper case characters! <br>
+The <b>variable group</b> (&#39;n&#39; character) can be any alpha numeric character 
+(&#39;0-9&#39;, &#39;a-z&#39;, &#39;A-Z&#39;), giving a total of 10+26+26 = 62 groups. Each group can 
+have 256 variable values. This gives a total of 15872 possible variables.<p>An 
+example tag is &quot;%a02&quot;. This tag will be replaced by a &#39;1&#39; or &#39;0&#39; character 
+representing the current value of Port A2. If this tag is placed on a Dynamic 
+Web page, it will be shown on a Web Browser requesting that page as a &#39;1&#39; or 
+&#39;0&#39;.</p>
+<h3><a class="anchor" name="mod_tags_dynamic">Dynamic Web Pages</a></h3>
+Any of the Tags listed below can be placed on a CGI web page, and will be 
+replaced by the requested data when sent to the HTTP Client (Web Browser for 
+example).
+<h3><a class="anchor" name="mod_tags_udp">UDP Request Command</a></h3>
+Any of the Tags listed below can be executed on the target by sending them to 
+UDP port 54123. All UDP request commands must start with the % character, 
+followed by the requested tag. The UDP port is configurable, and can be changed. 
+The reply (requested data) will be returned to the UDP Socket that sent this 
+Request Command.<p>For example, to request the value of port B2, returned as a 0 
+or 1 character (0=0V at input, 1=5V at input), send the following command string 
+via UDP to port 54123:<br>
+<em>%b02</em><br>
+The value of port B2 will be returned via UDP.<br>
+Another example could be to request the analog input value of Analog port 2, 
+returned as a decimal value between 0 - 1023. To do this, send the following 
+command string via UDP to port 54123:<br>
+<em>%n12</em><br>
+</p>
+<h5><a class="anchor" name="mod_tags_defined">Defined Tags</a></h5>
+The following list of Tags are implemented by the Modtronix SBC65EC Web Server:<br>
+<ul>
+	<li>Variable group <b>n</b> -
+	<a class="el" href="#mod_tags_ref_analog">
+	Analog Inputs Tags</a></li>
+	<li>Variable group <b>u</b> -
+	<a class="el" href="#mod_tags_ref_buses">
+	Bus Configuration Tags</a></li>
+	<li>Variable group <b>k</b> -
+	<a class="el" href="#mod_tags_ref_config">
+	Configuration Tags</a></li>
+	<li>Variable group <b>x</b> -
+	<a class="el" href="#mod_tags_ref_xbrd">
+	Expansion Board Tags</a></li>
+	<li>Variable group <b>l</b> -
+	<a class="el" href="#mod_tags_ref_general">
+	General Tags</a></li>
+	<li>Variable group <b>a</b> to <b>j</b> -
+	<a class="el" href="#mod_tags_ref_ios">
+	Port Tags</a></li>
+	<li>Variable group <b>w</b> -
+	<a class="el" href="#mod_tags_ref_pwm">
+	PWM Tags</a></li>
+	<li>Variable group <b>s</b> -
+	<a class="el" href="#mod_tags_ref_secure">
+	Secure Tags</a></li>
+</ul>
+<p></p>
+<hr>
+<h3><a class="anchor" name="mod_tags_ref_ios">Port Tags</a></h3>
+The variable groups <b>a</b> to <b>j</b> can be used to display the value of any 
+input pin or port on the PIC. The lower 3 bits of the 8 bit variable value is 
+used to specify the desired bit of the given port (port is given by variable 
+group). The upper 5 bits are used to specify how the ports value should be 
+displayed. The following variable groups are defined:
+<table class="compactTable" border="1" cellpadding="2" cellspacing="0">
+	<tr width="100%">
+		<td align="center"><i>Variable Group</i></td>
+		<td align="center"><i>Description</i></td>
+	</tr>
+	<tr>
+		<td>a</td>
+		<td>Port A </td>
+	</tr>
+	<tr>
+		<td>b</td>
+		<td>Port B </td>
+	</tr>
+	<tr>
+		<td>c</td>
+		<td>Port C </td>
+	</tr>
+	<tr>
+		<td>d</td>
+		<td>Port D </td>
+	</tr>
+	<tr>
+		<td>e</td>
+		<td>Port E </td>
+	</tr>
+	<tr>
+		<td>f</td>
+		<td>Port F </td>
+	</tr>
+	<tr>
+		<td>g</td>
+		<td>Port G </td>
+	</tr>
+	<tr>
+		<td>h</td>
+		<td>Reserved for furture use </td>
+	</tr>
+	<tr>
+		<td>j</td>
+		<td>Reserved for furture use </td>
+	</tr>
+</table>
+<p>The following variable values(in hex) are defined:
+<table class="compactTable" border="1" cellpadding="2" cellspacing="0">
+	<tr width="100%">
+		<td align="center"><i>Variable Value</i></td>
+		<td align="center"><i>String returned by Server - displayed on web page</i></td>
+	</tr>
+	<tr>
+		<td><code>00 - 07</code></td>
+		<td>&#39;1&#39; or &#39;0&#39; returned depending on PORT state</td>
+	</tr>
+	<tr>
+		<td><code>10 - 17</code></td>
+		<td>&quot;on&quot; or &quot;off&quot; returned depending on PORT state</td>
+	</tr>
+	<tr>
+		<td><code>20 - 27</code></td>
+		<td>&quot;&lt;!--&quot; returned if port is configured as input</td>
+	</tr>
+	<tr>
+		<td><code>28 - 2f</code></td>
+		<td>&quot;--&gt;&quot; returned if port is configured as input</td>
+	</tr>
+	<tr>
+		<td><code>30 - 37</code></td>
+		<td>&quot;&lt;!--&quot; returned if port is configured as output</td>
+	</tr>
+	<tr>
+		<td><code>38 - 3f</code></td>
+		<td>&quot;--&gt;&quot; returned if port is configured as output</td>
+	</tr>
+	<tr>
+		<td><code>40 - 47</code></td>
+		<td>&quot;checked&quot; returned if port is configured as output</td>
+	</tr>
+	<tr>
+		<td><code>48 - 4f</code></td>
+		<td>&quot;checked&quot; returned if port is configured as input</td>
+	</tr>
+	<tr>
+		<td><code>50 - 57</code></td>
+		<td>&quot;0&quot; returned if port is configured as output. &quot;1&quot; returned if port 
+		is configured as input.</td>
+	</tr>
+</table>
+For variable values where bit 3 is set (values from x8 to xf): <br>
+x8=port bit 0, x9=port bit 1, xa=port bit 2, xb=port bit 3 <br>
+xc=port bit 4, xd=port bit 5, xe=port bit 6, xf=port bit 8 <br>
+For example, variable value 48 will return &quot;checked&quot; if port <b>bit 0</b> is 
+configured as an input </p>
+<p>Examples:
+<table class="compactTable" border="1" cellpadding="2" cellspacing="0">
+	<tr width="100%">
+		<td align="center" nowrap="nowrap"><i>Example</i></td>
+		<td align="center"><i>Description</i></td>
+	</tr>
+	<tr>
+		<td><code>%a02</code></td>
+		<td>Variable group = a, Variable value = 0x02. This example will display 
+		the value of port A2 as &#39;1&#39; or &#39;0&#39;. So, if port A2 is set, a &#39;1&#39; will be 
+		displayed on the web page in stead of &#39;%a02&#39;</td>
+	</tr>
+	<tr>
+		<td><code>%c17</code></td>
+		<td>Variable group = c, Variable value = 0x17. This example will display 
+		the value of port C7 as &#39;on&#39; or &#39;off&#39;. So, if port C7 is clear for 
+		example, &#39;off&#39; will be displayed on the web page in stead of &#39;%c17&#39;</td>
+	</tr>
+	<tr>
+		<td><code>%f22</code></td>
+		<td>Variable group = f, Variable value = 0x22. Variable values 20 to 2F 
+		can be used to place HTML comments around HTML code if a port is 
+		configured as an input. For example, to only display an image if a Port 
+		pin RF1 is configured as an output, you could write:<br>
+		<i>%f21&lt;img src=&quot;picture.jpg&quot;&gt;%f29</i></td>
+	</tr>
+	<tr>
+		<td><code>%g52</code></td>
+		<td>Variable group = g, Variable value = 0x52. This example will display 
+		&#39;1&#39; if port G2 is configured as an input, and &#39;0&#39; if port G2 is 
+		configured as an output.</td>
+	</tr>
+	<tr>
+		<td><code>%b45</code></td>
+		<td>Variable group = b, Variable value = 0x45. This example will display 
+		&#39;checked&#39; if port B5 is configured as an output.</td>
+	</tr>
+	<tr>
+		<td><code>%c4c</code></td>
+		<td>Variable group = c, Variable value = 0x4c. This example will display 
+		&#39;checked&#39; if port C5 is configured as an intput.</td>
+	</tr>
+</table>
+</p>
+<p></p>
+<hr>
+<h3><a class="anchor" name="mod_tags_ref_analog">Analog Inputs Tags</a></h3>
+
+The variable group <b>n</b> can be used to display the value of any Analog Input 
+on the PIC.<p>The following variable values(in hex) are defined:
+<table class="compactTable" border="1" cellpadding="2" cellspacing="0">
+	<tr width="100%">
+		<td align="center"><i>Variable Value</i></td>
+		<td align="center"><i>String returned by Server - displayed on web page</i></td>
+	</tr>
+	<tr>
+		<td><code>00 - 0A</code></td>
+		<td>3 digit uppercase hex value, representing requested Analog Input 
+		Channel</td>
+	</tr>
+	<tr>
+		<td><code>10 - 1A</code></td>
+		<td>Decimal value 0 - 255 or 0 - 1023, representing requested Analog 
+		Input Channel</td>
+	</tr>
+	<tr>
+		<td><code>20 - 2A</code></td>
+		<td>Decimale value with 2 decimal places. This is the input voltage of 
+		the requested Analog Channel for 5V reference (default configuration is 
+		5V reference). </td>
+	</tr>
+	<tr>
+		<td><code>30 - 3A</code></td>
+		<td>&quot;&lt;!--&quot; returned if the channels is configured for ADC</td>
+	</tr>
+	<tr>
+		<td><code>40 - 4A</code></td>
+		<td>&quot;--&gt;&quot; returned if the channels is configured for ADC</td>
+	</tr>
+	<tr>
+		<td><code>50 - 5A</code></td>
+		<td>&quot;&lt;!--&quot; returned if the channels is NOT configured for ADC</td>
+	</tr>
+	<tr>
+		<td><code>60 - 6A</code></td>
+		<td>&quot;--&gt;&quot; returned if the channels is NOT configured for ADC</td>
+	</tr>
+</table>
+</p>
+<p>Examples:
+<table class="compactTable" border="1" cellpadding="2" cellspacing="0">
+	<tr width="100%">
+		<td align="center" nowrap="nowrap"><i>Example</i></td>
+		<td align="center"><i>Description</i></td>
+	</tr>
+	<tr>
+		<td><code>%n02</code></td>
+		<td>Variable group = n, Variable value = 0x02. This example will display 
+		the value of Analog Input 2 in uppercase hex. For example, &quot;A8&quot; will be 
+		displayed on the web page in stead of &#39;%n02&#39; if Analog Input 2 has the 
+		value 0xA8.</td>
+	</tr>
+	<tr>
+		<td><code>%n1A</code></td>
+		<td>Variable group = n, Variable value = 0xaA. This example will display 
+		the value of Analog input 10 in decimal. For example, &quot;210&quot; will be 
+		displayed on the web page in stead of &#39;%n1A&#39; if Analog Input 10 has the 
+		value 210.</td>
+	</tr>
+	<tr>
+		<td><code>%n32</code></td>
+		<td>Variable group = n, Variable value = 0x32. Variable values 30-3A and 
+		40-4A can be used to place HTML comments around HTML code if a Port pin 
+		is configured as an Analog Input. For example, to only display an image 
+		if a Analog Input 2 is configured as an Analog Input, you could write:<br>
+		<i>%n32&lt;img src=&quot;picture.jpg&quot;&gt;%n42</i></td>
+	</tr>
+</table>
+</p>
+<p></p>
+<hr>
+<h3><a class="anchor" name="mod_tags_ref_general">General Tags</a></h3>
+The variable group <b>l</b> is used for displaying general information.<p>The 
+following variable values(in hex) are defined.
+<table class="compactTable" border="1" cellpadding="2" cellspacing="0">
+	<tr width="100%">
+		<td align="center"><i>Variable Value</i></td>
+		<td align="center"><i>String returned by Server - displayed on web page</i></td>
+	</tr>
+	<tr>
+		<td><code>00</code></td>
+		<td><b>Deprecated - use the Username command in the Secure Tags group!</b><br>
+		Displays the <b>Username</b> of the current user. For example &quot;Guest&quot; or 
+		&quot;Admin&quot;. The current user will be &quot;Guest&quot; if the user has not logged in. 
+		This is a Secure Tag, and requires Authentication to be displayed!</td>
+	</tr>
+	<tr>
+		<td><code>01</code></td>
+		<td>Displays the <b>TCP/IP stack version</b>. For example &quot;V2.04&quot;. </td>
+	</tr>
+	<tr>
+		<td><code>02</code></td>
+		<td>Displays the <b>Application version</b>. For example &quot;V3.00&quot;.</td>
+	</tr>
+	<tr>
+		<td><code>03</code></td>
+		<td>Returns &#39;1&#39; if <b>Authentication</b> has been provided, else &#39;0&#39;.</td>
+	</tr>
+	<tr>
+		<td><code>04</code></td>
+		<td>Displays &#39;Yes&#39; if the board has a <b>bootloader</b>, else &#39;No&#39;</td>
+	</tr>
+	<tr>
+		<td><code>05</code></td>
+		<td>Displays our <b>NetBIOS</b> name</td>
+	</tr>
+	<tr>
+		<td><code>10</code></td>
+		<td>Displays first part of current <b>IP address</b>. For example, will 
+		be &#39;5&#39; if our IP is &#39;10.1.0.5&#39;.</td>
+	</tr>
+	<tr>
+		<td><code>11</code></td>
+		<td>Displays second part of current <b>IP address</b>.</td>
+	</tr>
+	<tr>
+		<td><code>12</code></td>
+		<td>Displays third part of current <b>IP address</b>.</td>
+	</tr>
+	<tr>
+		<td><code>13</code></td>
+		<td>Displays fourth part of current <b>IP address</b>. For example, will 
+		be &#39;10&#39; if our IP is &#39;10.1.0.5&#39;.</td>
+	</tr>
+	<tr>
+		<td><code>14</code></td>
+		<td>Displays first part of <b>MAC address</b>. For example, will be &#39;5&#39; 
+		if our MAC is &#39;0.1.2.3.4.5&#39;.</td>
+	</tr>
+	<tr>
+		<td><code>15</code></td>
+		<td>Displays second part of <b>MAC address</b>.</td>
+	</tr>
+	<tr>
+		<td><code>16</code></td>
+		<td>Displays third part of <b>MAC address</b>.</td>
+	</tr>
+	<tr>
+		<td><code>17</code></td>
+		<td>Displays fourth part of <b>MAC address</b>.</td>
+	</tr>
+	<tr>
+		<td><code>18</code></td>
+		<td>Displays fifth part of <b>MAC address</b>.</td>
+	</tr>
+	<tr>
+		<td><code>19</code></td>
+		<td>Displays sixth part of <b>MAC address</b>. For example, will be 
+		&#39;200&#39; if our MAC is &#39;200.1.2.3.4.5&#39;.</td>
+	</tr>
+	<tr>
+		<td><code>1A</code></td>
+		<td>Displays first part of current Network <b>MASK</b>. For example, 
+		will be &#39;255&#39; if our mask is &#39;0.0.0.255&#39;.</td>
+	</tr>
+	<tr>
+		<td><code>1B</code></td>
+		<td>Displays second part of current Network <b>MASK</b>.</td>
+	</tr>
+	<tr>
+		<td><code>1C</code></td>
+		<td>Displays third part of current Network <b>MASK</b>.</td>
+	</tr>
+	<tr>
+		<td><code>1D</code></td>
+		<td>Displays fourth part of current Network <b>MASK</b>. For example, 
+		will be &#39;15&#39; if our mask is &#39;15.0.0.255&#39;.</td>
+	</tr>
+	<tr>
+		<td><code>1E</code></td>
+		<td>Displays first part of current <b>Gateway address</b>. For example, 
+		will be &#39;5&#39; if our Gateway Address is &#39;10.1.0.5&#39;.</td>
+	</tr>
+	<tr>
+		<td><code>1F</code></td>
+		<td>Displays second part of current <b>Gateway address</b>.</td>
+	</tr>
+	<tr>
+		<td><code>20</code></td>
+		<td>Displays third part of current <b>Gateway address</b>.</td>
+	</tr>
+	<tr>
+		<td><code>21</code></td>
+		<td>Displays fourth part of current <b>Gateway address</b>. For example, 
+		will be &#39;10&#39; for &#39;10.1.0.5&#39;.</td>
+	</tr>
+	<tr>
+		<td><code>22</code></td>
+		<td>Displays I2C address of <b>LCD Display 1</b>. The default value for 
+		a Modtronix I2C LCD display is 80.</td>
+	</tr>
+	<tr>
+		<td><code>30</code></td>
+		<td>Read status byte of <b>LCD display 1</b> (default address 0x80) if 
+		present. This tag <b>has not been implemented yet!</b></td>
+	</tr>
+	<tr>
+		<td><code>31</code></td>
+		<td>Read status byte of <b>LCD display 2</b> (default address 0x81) if 
+		present. This tag <b>has not been implemented yet!</b></td>
+	</tr>
+	<tr>
+		<td><code>32</code></td>
+		<td>Read status byte of <b>LCD display 3</b> (default address 0x82) if 
+		present. This tag <b>has not been implemented yet!</b></td>
+	</tr>
+	<tr>
+		<td><code>33</code></td>
+		<td>Read status byte of <b>LCD display 4</b> (default address 0x83) if 
+		present. This tag <b>has not been implemented yet!</b></td>
+	</tr>
+	<tr>
+		<td><code>34</code></td>
+		<td>Read keypad data from <b>LCD display 1</b> (default address 0x80) if 
+		present. This tag <b>has not been implemented yet!</b></td>
+	</tr>
+	<tr>
+		<td><code>35</code></td>
+		<td>Read keypad data from <b>LCD display 2</b> (default address 0x81) if 
+		present. This tag <b>has not been implemented yet!</b></td>
+	</tr>
+	<tr>
+		<td><code>36</code></td>
+		<td>Read keypad data from <b>LCD display 3</b> (default address 0x82) if 
+		present. This tag <b>has not been implemented yet!</b></td>
+	</tr>
+	<tr>
+		<td><code>37</code></td>
+		<td>Read keypad data from <b>LCD display 4</b> (default address 0x83) if 
+		present. This tag <b>has not been implemented yet!</b></td>
+	</tr>
+	<tr>
+		<td><code>38</code></td>
+		<td>Read GPIO1, GPIO2 and GPIO3 Inputs from <b>LCD display 1</b> 
+		(default address 0x80) if present. This tag <b>has not been implemented 
+		yet!</b></td>
+	</tr>
+	<tr>
+		<td><code>39</code></td>
+		<td>Read GPIO1, GPIO2 and GPIO3 Inputs from <b>LCD display 2</b> 
+		(default address 0x81) if present. This tag <b>has not been implemented 
+		yet!</b></td>
+	</tr>
+	<tr>
+		<td><code>3A</code></td>
+		<td>Read GPIO1, GPIO2 and GPIO3 Inputs from <b>LCD display 3</b> 
+		(default address 0x82) if present. This tag <b>has not been implemented 
+		yet!</b></td>
+	</tr>
+	<tr>
+		<td><code>3B</code></td>
+		<td>Read GPIO1, GPIO2 and GPIO3 Inputs from <b>LCD display 4</b> 
+		(default address 0x83) if present. This tag <b>has not been implemented 
+		yet!</b></td>
+	</tr>
+	<tr>
+		<td><code>3C</code></td>
+		<td>Reserved for future LCD tags</td>
+	</tr>
+	<tr>
+		<td><code>3D</code></td>
+		<td>Reserved for future LCD tags</td>
+	</tr>
+	<tr>
+		<td><code>3E</code></td>
+		<td>Reserved for future LCD tags</td>
+	</tr>
+	<tr>
+		<td><code>3F</code></td>
+		<td>Reserved for future LCD tags</td>
+	</tr>
+	<tr>
+		<td><code>40</code></td>
+		<td>Status from UDP Event Port. Value 1=OK, 2=heartbeat</td>
+	</tr>
+</table>
+</p>
+<p>Examples:
+<table class="compactTable" border="1" cellpadding="2" cellspacing="0">
+	<tr width="100%">
+		<td align="center" nowrap="nowrap"><i>Example</i></td>
+		<td align="center"><i>Description</i></td>
+	</tr>
+	<tr>
+		<td><code>%l00</code></td>
+		<td>Variable group = l, Variable value = 00. This example will display 
+		the name of the user currently logged in. If the username of the user 
+		currently logged in is &quot;Admin&quot;, then &quot;Admin&quot; will be displayed on the 
+		web page in stead of &#39;%l00&#39;</td>
+	</tr>
+	<tr>
+		<td><code>%l10.%l11.%l12.%l13</code></td>
+		<td>Variable group = l, Variable value = 10 to 13. This example will 
+		display our IP address.</td>
+	</tr>
+</table>
+</p>
+<p></p>
+<hr>
+<h3><a class="anchor" name="mod_tags_ref_config">Configuration Tags</a></h3>
+The variable group <b>k</b> is used for displaying the contents of the
+Application Configuration bytes. The values are displayed in decimal! The 
+variable value (in uppercase hex) is used to specify the offset of the 
+configuration byte to display. All of these Tags are <b>Secure Tags</b>, and 
+will only parsed if Authentication has been provided! If no Authentication has 
+been provided, they will return 0. The &quot;Authentication&quot; tag in the &quot;General 
+Tags&quot; group can be used to determine if Authentication has been provided.<p>
+Examples:
+<table class="compactTable" border="1" cellpadding="2" cellspacing="0">
+	<tr width="100%">
+		<td align="center" nowrap="nowrap"><i>Example</i></td>
+		<td align="center"><i>Description</i></td>
+	</tr>
+	<tr>
+		<td><code>%k00.%k01.%k02.%k03</code></td>
+		<td>This example will display the currently configured IP address. If 
+		the IP address is &quot;10.1.0.1&quot;, then &quot;10.1.0.1&quot; will be displayed on the 
+		web page in stead of &quot;%k00.%k01.%k02.%k03&quot;.</td>
+	</tr>
+	<tr>
+		<td><code>%k0A.%k0B.%k0C.%k0D</code></td>
+		<td>This example will display the currently configured network MASK. If 
+		the MASK is &quot;255.0.0.0&quot;, then &quot;255.0.0.0&quot; will be displayed on the web 
+		page in stead of &quot;%k0A.%k0B.%k0C.%k0D&quot;.</td>
+	</tr>
+</table>
+</p>
+<p></p>
+<hr>
+<h3><a class="anchor" name="mod_tags_ref_buses">Bus Configuration Tags</a></h3>
+The variable group <b>u</b> is used for displaying the contents of the
+Bus Configuration bytes. The values are displayed in decimal! The variable 
+value (in uppercase hex) is used to specify the offset of the configuration byte 
+to display. All of these Tags are <b>Secure Tags</b>, and will only parsed if 
+Authentication has been provided! If no Authentication has been provided, they 
+will return 0. The &quot;Authentication&quot; tag in the &quot;General Tags&quot; group can be used 
+to determine if Authentication has been provided.<p>Examples:
+<table class="compactTable" border="1" cellpadding="2" cellspacing="0">
+	<tr width="100%">
+		<td align="center" nowrap="nowrap"><i>Example</i></td>
+		<td align="center"><i>Description</i></td>
+	</tr>
+	<tr>
+		<td><code>%u01</code></td>
+		<td>This tag will be replaced with the receive buffer size of Serial Bus 
+		1.</td>
+	</tr>
+</table>
+</p>
+<p></p>
+<hr>
+<h3><a class="anchor" name="mod_tags_ref_pwm">PWM Tags</a></h3>
+The variable group <b>w</b> can be used to display the current settings of the 
+PWM ouputs.<p>The following variable values(in hex) will display the current 
+value of a PWM channel.</p>
+<p>The SBC65EC has 4 PWM channels, so the second character can have a value from 
+1-4.</p>
+<p>
+<table class="compactTable" border="1" cellpadding="2" cellspacing="0">
+	<tr width="100%">
+		<td align="center"><i>Variable Value</i></td>
+		<td align="center"><i>String returned by Server - displayed on web page</i></td>
+	</tr>
+	<tr>
+		<td><code>01 - 04</code></td>
+		<td>PWM Channel&#39;s value as a 3 digit uppercase hex value</td>
+	</tr>
+	<tr>
+		<td><code>11 - 14</code></td>
+		<td>Decimal value 0 - 255 (for 8-bit mode) or 0 - 1023 (for 10-bit mode)</td>
+	</tr>
+	<tr>
+		<td><code>31 - 34</code></td>
+		<td>&quot;&lt;!--&quot; returned if the PWM output is enabled</td>
+	</tr>
+	<tr>
+		<td><code>41 - 44</code></td>
+		<td>&quot;--&gt;&quot; returned if the PWM output is enabled</td>
+	</tr>
+	<tr>
+		<td><code>51 - 54</code></td>
+		<td>&quot;&lt;!--&quot; returned if the PWM output is disabled</td>
+	</tr>
+	<tr>
+		<td><code>61 - 64</code></td>
+		<td>&quot;--&gt;&quot; returned if the PWM output is disabled</td>
+	</tr>
+</table>
+</p>
+<p>The following additional variable values are defined for the PWM channels.
+<table class="compactTable" border="1" cellpadding="2" cellspacing="0">
+	<tr width="100%">
+		<td align="center"><i>Variable Value</i></td>
+		<td align="center"><i>String returned by Server - displayed on web page</i></td>
+	</tr>
+	<tr>
+		<td><code>F0</code></td>
+		<td>Display the set frequency value. The frequency is given by a 
+		constant value between 0 to 3. <br>
+		For <b>8-bit mode</b>, the following values are defined: <i>0 and 1</i>=9.766kHz,
+		<i>2</i>=39.062kHz, <i>3</i>=156.25kHz <br>
+		For <b>10-bit mode</b>, the following values are defined: <i>0</i>=2.441kHz,
+		<i>1</i>=9.766kHz, <i>2 and 3</i>=39.062kHz </td>
+	</tr>
+	<tr>
+		<td><code>F4</code></td>
+		<td>Displays the set mode. A &#39;8&#39; indicates we are currently configured 
+		for 8-bit mode. A &#39;a&#39; indicates we are currently configured for 10-bit 
+		mode.</td>
+	</tr>
+	<tr>
+		<td><code>F8</code></td>
+		<td>Displays the enabled PWM channels. An uppercase hex value is 
+		returned that indicates what channels are enabled. Each bit in the hex 
+		value represents a PWM channel.</td>
+	</tr>
+</table>
+</p>
+<p>Examples:
+<table class="compactTable" border="1" cellpadding="2" cellspacing="0">
+	<tr width="100%">
+		<td align="center" nowrap="nowrap"><i>Example</i></td>
+		<td align="center"><i>Description</i></td>
+	</tr>
+	<tr>
+		<td><code>%w02</code></td>
+		<td>Variable group = w, Variable value = 0x03. This example will return 
+		the current set value of PWM channel 2. The value is represented as a 3 
+		character long uppercase hex value.</td>
+	</tr>
+	<tr>
+		<td><code>%w14</code></td>
+		<td>Variable group = w, Variable value = 0x14. This example will return 
+		the current set value of PWM channel 2. The value is represented as a 
+		decimal string.</td>
+	</tr>
+	<tr>
+		<td><code>%wf8</code></td>
+		<td>Variable group = w, Variable value = 0xf8. This example will return 
+		a two byte hex value. Each bit in the byte represents a PWM channel, and 
+		indicates if it is enabled or not. For example, if only PWM channel 1 is 
+		enabled, it will return 01. If only PWM channel 3 is enabled it will 
+		return 04 (binary 00000100). If PWM channel 2 and 4 are enabled, it will 
+		return 0A (binary 00001001). </td>
+	</tr>
+</table>
+</p>
+<p></p>
+<hr>
+<h3><a class="anchor" name="mod_tags_ref_secure">Secure Tags</a></h3>
+The variable group <b>s</b> is used for displaying secure information. All of 
+these Tags are <b>Secure Tags</b>, and will only parsed if Authentication has 
+been provided! If no Authentication has been provided, they will return 0. The 
+&quot;Authentication&quot; tag in the &quot;General Tags&quot; group can be used to determine if 
+Authentication has been provided.<p>The following variable values(in hex) are 
+defined.
+<table class="compactTable" border="1" cellpadding="2" cellspacing="0">
+	<tr width="100%">
+		<td align="center"><i>Variable Value</i></td>
+		<td align="center"><i>String returned by Server - displayed on web page</i></td>
+	</tr>
+	<tr>
+		<td><code>00</code></td>
+		<td>Displays the <b>Username</b> of the current user. For example 
+		&quot;Guest&quot; or &quot;Admin&quot;. The current user will be &quot;Guest&quot; if the user has not 
+		provided Authentication.</td>
+	</tr>
+	<tr>
+		<td><code>01</code></td>
+		<td>Displays the <b>Password</b> of the current user.</td>
+	</tr>
+</table>
+</p>
+<p></p>
+<hr>
+<h3><a class="anchor" name="mod_tags_ref_xbrd">Expansion Board Tags</a></h3>
+The variable group <b>x</b> can be used to display the current settings of the 
+Expansion Board.<p>The following variable values(in hex) will display the state 
+of the expansion board&#39;s <b>relays</b> (if it has any).
+<table class="compactTable" border="1" cellpadding="2" cellspacing="0">
+	<tr width="100%">
+		<td align="center"><i>Variable Value</i></td>
+		<td align="center"><i>String returned by Server - displayed on web page</i></td>
+	</tr>
+	<tr>
+		<td><code>00 - 07</code></td>
+		<td>&#39;1&#39; or &#39;0&#39; returned depending on state of relay. 00 returns state of 
+		relay 1, 01 relay 2, ..., and 07 relay 8. </td>
+	</tr>
+	<tr>
+		<td><code>10 - 17</code></td>
+		<td>&quot;on&quot; or &quot;off&quot; returned depending on state of relay. 10 returns state 
+		of relay 1, 11 relay 2, ..., and 17 relay 8. </td>
+	</tr>
+</table>
+</p>
+<p>The following variable values(in hex) will display the state of the expansion 
+board&#39;s <b>opto couple inputs</b> (if it has any).
+<table class="compactTable" border="1" cellpadding="2" cellspacing="0">
+	<tr width="100%">
+		<td align="center"><i>Variable Value</i></td>
+		<td align="center"><i>String returned by Server - displayed on web page</i></td>
+	</tr>
+	<tr>
+		<td><code>20 - 27</code></td>
+		<td>&#39;1&#39; or &#39;0&#39; returned depending on state of Opto Coupled input. 20 
+		returns state of opto 1, 21 opto input 2, ..., and 27 opto input 8. </td>
+	</tr>
+	<tr>
+		<td><code>30 - 37</code></td>
+		<td>&quot;on&quot; or &quot;off&quot; returned depending on state of Opto Coupled input. 30 
+		returns state of opto 1, 31 opto input 2, ..., and 37 opto input 8. </td>
+	</tr>
+</table>
+</p>
+<p>The following variable values(in hex) will display the state of the expansion 
+board&#39;s <b>inputs</b> (if it has any). <b>These tags are only currently 
+implemented in
+Events.</b>
+<table class="compactTable" border="1" cellpadding="2" cellspacing="0">
+	<tr width="100%">
+		<td align="center"><i>Variable Value</i></td>
+		<td align="center"><i>String returned by Server - displayed on web page</i></td>
+	</tr>
+	<tr>
+		<td><code>40 - 4f</code></td>
+		<td>&#39;1&#39; or &#39;0&#39; returned depending on state of Input. 40 returns state of 
+		input 1, 41 opto input 2, ..., and 4f input 16. </td>
+	</tr>
+</table>
+</p>
+<p><b>Examples:</b>
+<table class="compactTable" border="1" cellpadding="2" cellspacing="0">
+	<tr width="100%">
+		<td align="center" nowrap="nowrap"><i>Example</i></td>
+		<td align="center"><i>Description</i></td>
+	</tr>
+	<tr>
+		<td><code>%x02</code></td>
+		<td>Variable group = x, Variable value = 0x02. This example will return 
+		the current state of relay 3. A &#39;1&#39; is returned if relay is active, and 
+		&#39;0&#39; if the relay of off.</td>
+	</tr>
+	<tr>
+		<td><code>%x31</code></td>
+		<td>Variable group = x, Variable value = 0x31. This example will return 
+		the current state of opto coupler input 2. &quot;on&quot; is returned if it is 
+		currently on, and &#39;off&#39; if it is off.</td>
+	</tr>
+</table>
+</p>
+<hr>
+<h3>Real Time Clock tags</h3>
+<table class="compactTable" border="1" cellpadding="2" cellspacing="0">
+	<tr width="100%">
+		<td align="center" nowrap="nowrap"><i>Example</i></td>
+		<td align="center" style="width: 158px"><i>Description</i></td>
+	</tr>
+	<tr>
+		<td><code>%x</code>40</td>
+		<td style="width: 158px">Display Year</td>
+	</tr>
+	<tr>
+		<td style="height: 16px"><code>%x</code>41</td>
+		<td style="height: 16px; width: 158px">Display Month</td>
+	</tr>
+	<tr>
+		<td style="height: 16px">%x42</td>
+		<td style="height: 16px; width: 158px">Display Day</td>
+	</tr>
+	<tr>
+		<td style="height: 16px">%x43</td>
+		<td style="height: 16px; width: 158px">Display Hours</td>
+	</tr>
+	<tr>
+		<td style="height: 16px">%x44</td>
+		<td style="height: 16px; width: 158px">Display Minutes</td>
+	</tr>
+	<tr>
+		<td style="height: 16px">%x45</td>
+		<td style="height: 16px; width: 158px">Display Seconds</td>
+	</tr>
+</table>
+</p>
+
+
+</body>
+</html>
