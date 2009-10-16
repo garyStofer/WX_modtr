@@ -18,14 +18,13 @@ typedef enum _TCP_CLIENT_STATE {
 	SM_TCP_ARP_RESOLVED         ,
 	SM_TCP_CONNECT				, 
 	SM_TCP_WAIT_CONNECTED		,
-	SM_TCP_FINISHED         	,
-	SM_TCP_END =       		 99
+	SM_TCP_FINISHED         	
 } TCP_CLIENT_STATE;
 
 typedef enum _DECIMALS { NONE=0, ONE, TWO } DECIMALS;
 
 ROM char const msgURL[] = 	 	"GET /weatherstation/updateweatherstation.php";
-ROM char const msgID[] = 		 "?ID="; // KCACONCO18
+ROM char const msgID[] = 		"?ID="; // KCACONCO18
 ROM char const msgPWD[] = 		"&PASSWORD="; //weather
 ROM char const msgACT[] =		"&action=updateraw";
 ROM char const msgDate[] = 	 	"&dateutc=";
@@ -64,7 +63,7 @@ BYTE Wind_counts[WX_UPLINK_INTERVAL]; 		// array to collect the 15 1sec 8 bit co
 //WORD Wind_gusts[AGV_INTERVAL_10min];
 //static BYTE gust_ndx;
 
-//TODO: need to group these weather related vars into one structure 
+//TODO: Could group these weather related vars into one structure 
 unsigned short Wind_spd;		// in 1/10 Statute Mile  
 unsigned short Wind_gst;		// in 1/10 Statute Mile 
 unsigned short Wind_dir;		// in degree 0-359
@@ -82,7 +81,6 @@ void
 TCP_ClientInit( void )
 {
 	
-	//  Todo: This shoule be kept in the EEPROM and be modifyable via webinterface 
 	tcpServerNode.IPAddr.v[0] = appcfgGetc(APPCFG_WX_IP_ADDR0);	// 38
 	tcpServerNode.IPAddr.v[1] = appcfgGetc(APPCFG_WX_IP_ADDR1); //102
 	tcpServerNode.IPAddr.v[2] = appcfgGetc(APPCFG_WX_IP_ADDR2); //136
@@ -91,7 +89,6 @@ TCP_ClientInit( void )
 	smTcp = SM_TCP_SEND_ARP;
 	tcpSocketUser = INVALID_SOCKET;
 	
-	// TODO: needs to go in weather init function 	
 	Wind_dir =  Wind_spd = 0;
 	Temp_F = 0;
 
@@ -112,14 +109,16 @@ TCP_ClientInit( void )
 	
 	
 }	
-static void put_WX_param(ROM char const * pMsg)
+static void 
+put_WX_param(ROM char const * pMsg)
 {
 	BYTE b;
 	while ( b = *pMsg++)
    			TCPPut(tcpSocketUser, b);
   
 }	 
-static void put_WXparam_arg ( ROM char const * pMsg, WORD val, DECIMALS dec)
+static void 
+put_WXparam_arg ( ROM char const * pMsg, WORD val, DECIMALS dec)
 {
 	BYTE b;
 	char bu[12]; 		// for itoa 
@@ -293,33 +292,33 @@ TCP_ClientTask(void)
                     b =  TCPFlush(tcpSocketUser);
                     tsecMsgSent = TickGetSec();     //Update with current time
   
-                   smTcp = SM_TCP_FINISHED;
+                   smTcp = SM_TCP_FINISHED;			// Go to wait for the next update cycle 
                 }    
             }
             else 
 	        {
-		        // if there is no connection after 60 seconds give up and park the task 
+		        // if there is no connection after 60 seconds go back and try to establish connection again
 		      if (TickGetSecDiff(tsecMsgSent) >= (TICK16)60)
               { 
                    TCPDisconnect(tcpSocketUser);
-                   smTcp = SM_TCP_END;
+                   smTcp = SM_TCP_SEND_ARP;			// Try restarting  the connection 
+                   TRISB_RB6 = 0;LATB6 = 1; 		// indicate no connection via red LED 	
               }
          	}   
             break;
 
 
 
-        case SM_TCP_FINISHED:
+        case SM_TCP_FINISHED: 		// Finished sending a report, now waiting for the next interval 
               if (TickGetSecDiff(tsecMsgSent) >= WX_UPLINK_INTERVAL)	// every 15 seconds send a new data package 
               { 
-	              	smTcp =SM_TCP_CONNECT; 	// reconnectd and send next set of parameters
+	                TRISB_RB6 = 0; LATB6 = 0; // clear error indication
 	              	
-// TODO: need a function here that prepares all the weather data in one place before restarting the TCP uplink again 
-	
+	              	
 	                // Get the Temp reading from the external analog sensor 
-					tmp =  AdcValues[0] * 0.361;   // Calculate  deg K
-					tmp -= 273.15;				 // Convert to deg C
-					tmp = tmp*9/5;				 // Convert to deg F
+					tmp =  AdcValues[0] * 0.361;   	// Calculate  deg K
+					tmp -= 273.15;				 	// Convert to deg C
+					tmp = tmp*9/5;				 	// Convert to deg F
 					tmp += 32;
 					Temp_F = tmp*10;
 					
@@ -422,12 +421,13 @@ TCP_ClientTask(void)
 					Solar_rad = AdcValues[3]* 1.4; // estimated watts per Sq Meter, based on max Vout 3.35V and roughly 1KW per sq meter max radiation 
 	  				if ( Solar_rad < 10 ) 
 	  					Solar_rad =0;
+              		
+              		smTcp =SM_TCP_CONNECT; 	// reconnectd and send next set of parameters
               }	  	 
            	 break;
            	 
             
- 		case SM_TCP_END: // Park this task
- 		default:
+  		default:					// we should never get here !
  				TRISB_RB6 = 0;		// Turn on the RED LED to indicate no connection to Wunderground
                 LATB6 = 1; 
  			 break;
@@ -441,6 +441,10 @@ TCP_ClientTask(void)
 	 	//len = TCPGetArray(tcpSocketUser, (BYTE *)buff, 200);
 	 	// the response could strech  over multiple packets ! 
 		// All we want to know if wunderground reported "success" after a pair of "\r\n" 
+		
+// Note: It appears that Wunderground always reports success as long as ID and Password is correct, even though the date 
+// or the data is misformed or missing. a "success" reply does not mean that the data is actually accepted into Wunderground
+// so no evaliation on the response is doen at this time.
 	   	
 	   	TCPDiscard( tcpSocketUser); 
 	 } 
