@@ -470,9 +470,9 @@ void appcfgCpuIO(void)
     val = appcfgGetc(APPCFG_TRISC) | 0xd8;
     
 
-    //If IOR5E is used, ensure C0, C1, C2 and C5 are outputs
+    //If IOR5E is used, ensure  C1, C2, C5 and C6 are outputs
     if (appcfgGetc(APPCFG_XBRD_TYPE) == XBRD_TYPE_IOR5E) {
-        val &= 0b11011000;
+        val &= 0b10011001;
     }
     
  
@@ -482,7 +482,7 @@ void appcfgCpuIO(void)
     }
  
  	//If WX board is used, ensure C0 is input -- pulse signal from anemometer,
-  	if (appcfgGetc(APPCFG_XBRD_TYPE) == XBRD_TYPE_WX) {
+  	if (appcfgGetc(APPCFG_XBRD_TYPE) == XBRD_TYPE_WX || appcfgGetc(APPCFG_XBRD_TYPE) == XBRD_TYPE_IOR5E) {
         val |= 0b00000001;
     }
 
@@ -949,7 +949,7 @@ void appcfgXboard(void)
 #endif
 
     // Disable the SCK onto the D1307 RTC  
-     if (appcfgGetc(APPCFG_XBRD_TYPE) == XBRD_TYPE_WX) 
+     if (appcfgGetc(APPCFG_XBRD_TYPE) == XBRD_TYPE_WX || appcfgGetc(APPCFG_XBRD_TYPE) == XBRD_TYPE_IOR5E) 
 	 {
    		TRISG_RG0 =0;	
 		LATG0 = 1;
