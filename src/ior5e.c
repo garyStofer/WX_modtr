@@ -43,12 +43,12 @@
 #ifndef NO_IOR5E
 /////////////////////////////////////////////////
 // Defines
-#define LATCH_SER       LATC6		// GS: modified from C0 for compatability with WX HW
+#define LATCH_SER       LATG1		// GS: modified from C0 for compatability with WX HW
 #define LATCH_SCLK      LATC1
 #define LATCH_RCLK      LATC2
 #define LATCH_OE        LATC5
 
-#define LATCH_SER_DIR   TRISC_RC6	// GS: modified from C0 for compatability with WX HW
+#define LATCH_SER_DIR   TRISG_RG1	// GS: modified from C0 for compatability with WX HW
 #define LATCH_SCLK_DIR  TRISC_RC1
 #define LATCH_RCLK_DIR  TRISC_RC2
 #define LATCH_OE_DIR    TRISC_RC5

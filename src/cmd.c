@@ -1894,10 +1894,11 @@ WORD cmdGetTag(GETTAG_INFO* pGetTagInfo)
 #ifndef NO_IOR5E            
             if (xbrdType==XBRD_TYPE_IOR5E) {
                 bVal = ((ior5eGetOpto() & (0x01<<ch)) == 0) ? FALSE : TRUE;
-                bvalid = 1;
+                bIsValid = 1;
             }
 #endif
-         
+
+
 
             if (bIsValid) {
                 if (varVal4to7==0x20) {

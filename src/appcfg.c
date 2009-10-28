@@ -470,9 +470,9 @@ void appcfgCpuIO(void)
     val = appcfgGetc(APPCFG_TRISC) | 0xd8;
     
 
-    //If IOR5E is used, ensure  C1, C2, C5 and C6 are outputs
+    //If IOR5E is used, ensure  C1, C2, C5  are outputs
     if (appcfgGetc(APPCFG_XBRD_TYPE) == XBRD_TYPE_IOR5E) {
-        val &= 0b10011001;
+        val &= 0b11011001;
     }
     
  
@@ -497,10 +497,13 @@ void appcfgCpuIO(void)
 
   
      // G0 is RTC clock enable -- must be set to output 
+     // G1 is SER data for shift register- for relay and LED 
      if (appcfgGetc(APPCFG_XBRD_TYPE) == XBRD_TYPE_IOR5E ||appcfgGetc(APPCFG_XBRD_TYPE) == XBRD_TYPE_WX )
 	 {
-        val &= 0xfe;
-     }   
+        val &= 0xfd;
+     } 
+     
+    
     TRISG = val;
     
 #else
