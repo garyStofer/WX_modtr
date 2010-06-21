@@ -353,8 +353,16 @@ TCP_ClientTask(void)
 	              	// the following formual gives MPH in 1/10 miles resolution
 	              	// MPH = wind_counts_per_sec  *2.25 /6 *10;
 	              	// or MPH = wind_counts_per_sec * 3.75 
-					Wind_spd = Wind_spd * 3.75;				// Averaged wind speed in 1/10 of MPH since last update interval
-					Wind_gst = Wind_gst * 3.75; 			// Peak wind speed in 1/10 MPH since last update interval
+#ifdef AN_6POLES
+#define AN_CAL_FACTOR 3.75
+#else
+#ifdef AN_7POLES
+#define AN_CAL_FACTOR 3.214
+#endif 
+#endif
+			
+					Wind_spd = Wind_spd * AN_CAL_FACTOR;				// Averaged wind speed in 1/10 of MPH since last update interval
+					Wind_gst = Wind_gst * AN_CAL_FACTOR; 			// Peak wind speed in 1/10 MPH since last update interval
 
 /*					
 					// Store current 1s peak in longterm gust array (for 10 min) 
