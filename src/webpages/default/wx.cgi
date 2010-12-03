@@ -65,11 +65,13 @@ Wunder IP :&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
  <hr>
  <h3> Weather station data read out </h3>
 
-Wind  Dir&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; = %l48&nbsp; in deg<br>
-Wind Speed = %l49&nbsp; in 1/10 mph<br>
-Wind Gust&nbsp;&nbsp;&nbsp; = %l50&nbsp; in 1/10 mph<br>
-Temp F&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; = %l52&nbsp; in 1/10 deg 
-	F<br>
-Baro Inch&nbsp;&nbsp;&nbsp;&nbsp; = %l53&nbsp; in 1/100 inch mercury<br>
-Solar Rad&nbsp;&nbsp;&nbsp;&nbsp; = %l51&nbsp; in watts per sq m<br>
+Wind  Dir&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; = %l48 Degrees <br>
+Wind Speed = %l49 Mph<br>
+Wind Gust&nbsp;&nbsp;&nbsp; = %l50 Mph<br>
+Temp&nbsp;&nbsp; &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; = %l52 Deg.	F<br>
+Dewpoint&nbsp;&nbsp;&nbsp;&nbsp; = %l55 Deg. F<br>
+R Humidity&nbsp;&nbsp;&nbsp; = %l54 Percent<br>
+Baro&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; = %l53 inch Hg<br>
+Solar Rad&nbsp;&nbsp;&nbsp;&nbsp; = %l51 W/m2<br>
+<br>
  <hr>

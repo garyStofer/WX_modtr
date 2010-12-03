@@ -1,19 +1,15 @@
-<html>
+﻿<html>
 <head>
 <meta http-equiv="Pragma" content="no-cache">
 <link href="mx.css" rel="stylesheet" type="text/css">
 <script src="lib01.js"></script>
 <script src="buscfg65.js"></script>
 </head>
-
 <body class=ifrmBody>
-<p><b style="color:red">Linking of Serial Buses is in Beta stage, and has not been fully tested yet! Please
-report any bugs on our <a href="http://forum.modtronix.com/index.php?board=1.0" target=_blank>forum</a></b>.
-<p>
 This section is used to link the available serial buses. This board has
-4 serial buses:
+4 (3) serial buses:
 <br>- Serial Port 1
-<br>- Serial Port 2 <b> Not Available on SBC68EC </b>
+<br>- Serial Port 2 <b>( Not Available on SBC68EC )</b>
 <br>- UDP Port 1
 <br>- UDP Port 2
 <br>

@@ -23,7 +23,7 @@ function bscfg(baud1, ser1Cfg, baud2, ser2Cfg) {
 			</select></td> \
 		</tr> \
 		<tr><td class=bBot colspan=2>&nbsp;</td></tr> \
-		<tr><td class=bHdr colspan=2>USART 2 Settings (Not available on SBC68EC )</td></tr> \
+		<tr><td class=bHdr colspan=2>USART 2 Settings (Not Available on SBC68EC )</td></tr> \
 		<tr><td class=bDesc colspan=2>This section is used to configure USART 2. It is \
 			available via port pins G1 (TX) and G2 (RX) of the daughter board connector. \
 			Do NOT use G1 and G2 when USART 2 is enabled!</td></tr> \

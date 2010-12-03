@@ -29,8 +29,7 @@ html {height:100%; overflow-y:hidden;}
 <table id=mainTable height="100%" width="100%" cellpadding=0 cellspacing=0>
 	<!-- Top -->
 	<tr><td class=top colspan=2>
-		Modtronix SBC65EC Web Server
-	</td></tr>
+		SBC65EC/SBC68 Main Menu</td></tr>
 
 	<tr>
 	<!-- Left -->
@@ -40,12 +39,11 @@ html {height:100%; overflow-y:hidden;}
 		<tr><td class=menuBtn><a href="ioval.cgi" target=main>Port Values</a></td></tr>
 		<tr><td class=menuBtn><a href="lcd2s.htm" target=main>LCD Display</a></td></tr>
 		<tr><td class=menuBtn><a href="pwmval.cgi" target=main>PWM Values</a></td></tr>
-		<tr><td class=menuBtn><a href="_xdb.cgi" target=main>Expansion Board</a></td></tr>
+		<tr><td class=menuBtn><a href="exp.cgi" target=main>Expansion Board</a></td></tr>
 		<tr><td class=menuBtn><a href="exp1.cgi" target=main>Example 1</a></td></tr>
 		<tr><td class=menuBtn><a href="xcfg.htm">System Configuration</a></td></tr>
-		<tr><td class=menuBtn><a href="xbus.htm">Serial Configuration</a></td></tr>
-		<tr><td class=menuBtn><a href="cmd.htm">List of GET commands</a></td></tr>
-		<tr><td class=menuBtn><a href="tag.htm">List of Special Tags</a></td></tr>
+		<tr><td class=menuBtn><a href="cmd.htm" target="main">List of GET commands</a></td></tr>
+		<tr><td class=menuBtn><a href="tag.htm" target="main">List of Special Tags</a></td></tr>
 		<tr><td class=menuBtn><a href="wx.cgi"target=main>WX Station</a></td></tr>
 	</table></td>
 
@@ -53,7 +51,7 @@ html {height:100%; overflow-y:hidden;}
 	<!-- Option 1: Make height of td below 2000, and remove "overflow-y: hidden;" from html style -->
 	<!-- Option 2: Make height of td below "100%", and add "overflow-y: hidden;" to html style -->
 	<td width="100%" height="100%" valign=top>
-		<iframe width="100%" height="100%" name=main src="intro.htm" scrolling="auto" frameborder=0></iframe>
+		<iframe width="100%" height="100%" name=main src="status.cgi" scrolling="auto" frameborder=0></iframe>
 	</td>
 	</tr>
 </table>
