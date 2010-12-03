@@ -1,5 +1,5 @@
  /**
-
+  
  *********************************************************************/
 
 #define THIS_IS_RTC
@@ -14,7 +14,7 @@
 typedef enum _RTC_REGS {RTCSec,RTCMin,RTCHour,RTCDay,RTCDate,RTCMonth,RTCYear,RTCControl}
 RTC_REGS;
 
-static BYTE rtc_regs[RTCControl+1] = {0x00,0x00,0x11,0x05,0x27,0x08,0x09, 0x80};
+static BYTE rtc_regs[RTCControl+1] = {0x00,0x00,0x11,0x05,0x27,0x08,0x09, 0x13};
 
 
 typedef struct _tag_RTC
@@ -61,15 +61,14 @@ BYTE SetRTC( void ) // Using global RTC structure to set RTC from
 	BYTE i;
 	BYTE ret = 1;
 	
-	rtc_regs[RTCYear] = hextoBCD(RTC.Year - 2000); 
+	rtc_regs[RTCYear]  = hextoBCD(RTC.Year - 2000); 
 	rtc_regs[RTCMonth] = hextoBCD(RTC.Month)& 0x1F;
-	rtc_regs[RTCDate] = hextoBCD(RTC.Date)  & 0x3F;
-	rtc_regs[RTCHour] = hextoBCD(RTC.Hour) 	& 0x3f;
-	rtc_regs[RTCMin] = hextoBCD(RTC.Min) 	& 0x7f;
-	rtc_regs[RTCSec] = hextoBCD(RTC.Sec)	& 0x7f;  // Bit 7 contains the "Clock Halt" bit and must be 0 for the RTC to tun 
-	rtc_regs[RTCDay] = 0; 	// no support for day of the week
-	rtc_regs[RTCControl] = 0x80; // No square wave output
-	
+	rtc_regs[RTCDate]  = hextoBCD(RTC.Date)  & 0x3F;
+	rtc_regs[RTCHour]  = hextoBCD(RTC.Hour) 	& 0x3f;
+	rtc_regs[RTCMin]   = hextoBCD(RTC.Min) 	& 0x7f;
+	rtc_regs[RTCSec]   = hextoBCD(RTC.Sec)	& 0x7f;  // Bit 7 contains the "Clock Halt" bit and must be 0 for the RTC to tun 
+	rtc_regs[RTCDay]   = 0; 	// no support for day of the week
+	rtc_regs[RTCControl] = 0x13; //32Khz square wave OC output  -- In case we need it for the Baro device
 	
 	// init to < 100K Baud
 	i2cOpen(I2C_MASTER, I2C_SLEW_OFF, EE_BAUD(CLOCK_FREQ, RTC_BAUD));
