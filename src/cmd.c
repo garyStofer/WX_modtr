@@ -69,8 +69,9 @@
 /////////////////////////////////////////////////
 // Function prototypes
 //static WORD cmdGetByteVar(BYTE ref, BYTE* val, BYTE b);
-#define cmdGetByteVar(ref, val, b) cmdGetWordVar(ref, val, b)
-static WORD cmdGetWordVar(BYTE ref, BYTE* val, WORD w);
+#define cmdGetByteVar(ref, val, b) cmdGetWordVar2(ref, val, b,0)
+#define cmdGetWordVar(ref, val, b) cmdGetWordVar2(ref, val, b,0)
+//static WORD cmdGetWordVar(BYTE ref, BYTE* val, WORD w);
 static WORD cmdGetByteHexVar(BYTE ref, BYTE* val, BYTE b);
 static WORD cmdGetWordHexVar(BYTE ref, BYTE* val, WORD w);
 static WORD cmdGetROMStringVar(BYTE ref, BYTE* val, ROM char* str);
@@ -80,6 +81,10 @@ static WORD cmdGetEepromStringVar(BYTE ref, BYTE* val, WORD adr);
 
 #define HTTP_START_OF_VAR       (0x0000ul)
 #define HTTP_END_OF_VAR         (0xFFFFul)
+
+
+
+
 
 /////////////////////////////////////////////////
 // ROM Strings
@@ -140,6 +145,49 @@ typedef enum _SM_CMDX
 } SM_CMDX;
 static BYTE smCmdExec; //Current State of "Command Execution State Machine"
 
+static WORD 
+cmdGetWordVar2(BYTE ref, BYTE* val, WORD w, BYTE dec_places)
+{
+	BYTE i=0;
+    
+    if ( ref == (BYTE)HTTP_START_OF_VAR )
+    {
+        memset( strTmp,0,STRTMP_MAXSIZE);
+
+		// Convert and suppress all leading zeros
+		if (w/1000) 
+			strTmp[i++] = w /1000 +'0'; w %=1000;
+		
+		if (w/100)
+			strTmp[i++] = w /100 +'0'; w %=100;
+		
+		if (dec_places == 2 )
+		{
+			if (i==0)
+				strTmp[i++]='0';	// Add in leading 0
+			strTmp[i++]='.';
+		}
+		if (w/10)
+			strTmp[i++] = w /10 +'0'; w %= 10;
+		
+		if (dec_places == 1 )
+		{
+			if (i==0)
+				strTmp[i++]='0';	// add in leading 0
+			strTmp[i++]='.';
+		}
+		strTmp[i++] = w+'0';
+		  
+    }
+    *val = strTmp[(BYTE)ref];
+    if ( strTmp[(BYTE)ref] == '\0' )
+        return HTTP_END_OF_VAR;
+
+    (BYTE)ref++;
+    return ref;
+}
+
+
 /**
  * Initializes command processing
  */
@@ -156,7 +204,7 @@ void cmdInit(void) {
 
     //Configure for local port 54123 and remote port INVALID_UDP_PORT. This opens the socket to
     //listen on the given port.
-    udpSocketCmd = UDPOpen(CMD_UDPPORT, &udpServerNode, INVALID_UDP_PORT);
+  //  udpSocketCmd = UDPOpen(CMD_UDPPORT, &udpServerNode, INVALID_UDP_PORT);
     
     //An error occurred during the UDPOpen() function
     if (udpSocketCmd == INVALID_UDP_SOCKET) {
@@ -1016,6 +1064,7 @@ WORD execNameValueCmd(BYTE * name, BYTE * value, BYTE user) {
             case CMDCODE_GEN_LCD_ARRAY:
             case CMDCODE_GEN_LCD_STRING:
             {
+#ifndef NO_LCD	            
                 BYTE lcdNum;
                 p = (BYTE *)value;
                 i = 0;
@@ -1104,6 +1153,7 @@ WORD execNameValueCmd(BYTE * name, BYTE * value, BYTE user) {
                     lcdPutArray(lcdNum, buf, i);
                 }
                 break;
+#endif                 
             }
         }
     }
@@ -1549,12 +1599,12 @@ WORD cmdGetTag(GETTAG_INFO* pGetTagInfo)
         }
         else if (tagVal == VARVAL_GEN_WX_WNDSPD )
         {
-           	 pGetTagInfo->ref = cmdGetWordVar(ref, pGetTagInfo->val,Wind_spd) ;
+           	 pGetTagInfo->ref = cmdGetWordVar2(ref, pGetTagInfo->val,Wind_spd,1) ;
            	 return 1;
         }
         else if (tagVal == VARVAL_GEN_WX_WNDGST )
         {
-           	 pGetTagInfo->ref = cmdGetWordVar(ref, pGetTagInfo->val,Wind_gst) ;
+           	 pGetTagInfo->ref = cmdGetWordVar2(ref, pGetTagInfo->val,Wind_gst,1) ;
            	 return 1;
         }
         else if (tagVal == VARVAL_GEN_WX_SOL )
@@ -1564,12 +1614,22 @@ WORD cmdGetTag(GETTAG_INFO* pGetTagInfo)
         }
         else if (tagVal == VARVAL_GEN_WX_TEMP )
         {
-           	 pGetTagInfo->ref = cmdGetWordVar(ref, pGetTagInfo->val,Temp_F) ;
+           	 pGetTagInfo->ref = cmdGetWordVar2(ref, pGetTagInfo->val,Temp_F,1) ;
            	 return 1;
         }
           else if (tagVal == VARVAL_GEN_WX_BARO )
         {
-           	 pGetTagInfo->ref = cmdGetWordVar(ref, pGetTagInfo->val,Baro_Inch) ;
+           	 pGetTagInfo->ref = cmdGetWordVar2(ref, pGetTagInfo->val,Baro_Inch, 2) ;
+           	 return 1;
+        }
+        else if (tagVal == VARVAL_GEN_WX_RH )
+        {
+           	 pGetTagInfo->ref = cmdGetWordVar2(ref, pGetTagInfo->val,RH, 0) ;
+           	 return 1;
+        }
+        else if (tagVal == VARVAL_GEN_WX_DWPT )
+        {
+           	 pGetTagInfo->ref = cmdGetWordVar2(ref, pGetTagInfo->val,T_dewptF, 1) ;
            	 return 1;
         }
     }
@@ -2096,7 +2156,7 @@ static WORD cmdGetWordHexVar(BYTE ref, BYTE* val, WORD w)
  *
  * @return      Callback reference - is the offset of the next byte to be read. Or, HTTP_END_OF_VAR if last
  *              byte (NULL string terminator) is returned.
- */
+ *//*
 static WORD cmdGetWordVar(BYTE ref, BYTE* val, WORD w)
 {
     if ( ref == (BYTE)HTTP_START_OF_VAR )
@@ -2113,3 +2173,4 @@ static WORD cmdGetWordVar(BYTE ref, BYTE* val, WORD w)
     return ref;
 }
 
+*/

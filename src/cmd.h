@@ -420,7 +420,9 @@ will display our IP address.</td></tr>
 #define VARVAL_GEN_WX_WNDGST			(0x50)
 #define VARVAL_GEN_WX_SOL				(0x51)
 #define VARVAL_GEN_WX_TEMP 				(0x52)
-#define VARVAL_GEN_WX_BARO				(0x53)
+#define VARVAL_GEN_WX_BARO				(0x53)
+#define VARVAL_GEN_WX_RH				(0x54)
+#define VARVAL_GEN_WX_DWPT				(0x55)
 
 /////////////////////////////////////////////////
 // Variable Group - Config Tags

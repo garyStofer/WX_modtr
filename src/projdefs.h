@@ -672,7 +672,7 @@ extern WORD AdcValues[ADC_CHANNELS];
  * @code #define STACK_USE_ICMP @endcode
  * Uncomment if stack is to use ICMP. For details see @ref mod_tcpip_base_icmp.
  */
-#define STACK_USE_ICMP
+#define STACK_USE_ICMP		// Internet Control Message Protocol ... Needed for Ping
 
 /** @addtogroup mod_conf_projdefs
  * @code #define STACK_USE_HTTP_SERVER @endcode
@@ -697,7 +697,7 @@ extern WORD AdcValues[ADC_CHANNELS];
  * @code #define STACK_USE_DHCP @endcode
  * Uncomment if stack should implement the DHCP protocol. For details see @ref mod_tcpip_user_dhcp.
  */
-#define STACK_USE_DHCP
+//#define STACK_USE_DHCP
 
 /** @addtogroup mod_conf_projdefs
  * @code #define STACK_USE_FTP_SERVER @endcode
@@ -737,19 +737,19 @@ extern WORD AdcValues[ADC_CHANNELS];
  * If you need them with your custom application, enable it here.
  * Uncomment if stack should implement the UDP protocol. For details see @ref mod_tcpip_base_udp.
  */
-#define STACK_USE_UDP
+#define STACK_USE_UDP   // Cmd.c uses UDP to process commands from UDP port -- Not ifdefed in cmd.c 
 
 /** @addtogroup mod_conf_projdefs
  * @code #define STACK_USE_NBNS @endcode
  * Uncomment if stack should implement NBNS
  */
-#define STACK_USE_NBNS
+#define STACK_USE_NBNS   // Net Bios Name Service 
 
 /** @addtogroup mod_conf_projdefs
  * @code #define STACK_USE_DNS @endcode
  * Uncomment if stack should implement DNS
  */
-//#define STACK_USE_DNS
+#define STACK_USE_DNS		
 
 /*
  * When SLIP is used, DHCP is not supported.
@@ -764,7 +764,7 @@ extern WORD AdcValues[ADC_CHANNELS];
  * mode.  In CLIENT mode, some functions specific to client operation
  * are enabled.
  */
-//#define STACK_CLIENT_MODE
+#define STACK_CLIENT_MODE
 
 /*
  * When HTTP is enabled, TCP must be enabled.

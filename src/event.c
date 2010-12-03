@@ -215,6 +215,8 @@ void evtTask(void) {
  * @return Set's bit 0 in returned byte if data added to UDP event port
  */
 BYTE chkLCD(void) {
+#ifndef NO_LCD
+
     BYTE ret = 0;
     BYTE i;
     BYTE key;
@@ -240,6 +242,10 @@ BYTE chkLCD(void) {
     }
     
     return ret;
+#else
+	return 0;
+#endif
+    
 }
 
 /**

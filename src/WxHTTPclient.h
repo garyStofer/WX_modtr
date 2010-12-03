@@ -28,6 +28,9 @@ extern unsigned short Wind_dir;		// in degree 0-359
 extern unsigned short Solar_rad;		// estimate of watts per sq meter 
 extern unsigned short Baro_Inch;					// Pressure in Kilo Pascal normailzed to sea level
 extern unsigned short Temp_F;					// Temp in F
+extern unsigned short T_dewptF;
+extern unsigned short RH;
+
 #endif   
 
 

@@ -114,8 +114,11 @@ void lcdService(void);
  * Are there any keys in the keypad buffer.
  * @return 1 if true, else 0
  */
+#ifndef NO_LCD
 #define kpadHasKeys(kpadNum) (kpadBufPut[kpadNum] != kpadBufGet[kpadNum])
-
+#else
+#define kpadHasKeys(kpadNum) (0)
+#endif 
 
 /**
  * Get the next key from the keypad buffer. Before calling this function, the

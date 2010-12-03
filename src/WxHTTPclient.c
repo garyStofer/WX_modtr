@@ -24,12 +24,11 @@ typedef enum _TCP_CLIENT_STATE {
 typedef enum _DECIMALS { NONE=0, ONE, TWO } DECIMALS;
 
 ROM char const msgURL[] = 	 	"GET /weatherstation/updateweatherstation.php";
-ROM char const msgID[] = 		"?ID="; // KCACONCO18
-ROM char const msgPWD[] = 		"&PASSWORD="; //weather
+ROM char const msgID[] = 		"?ID="; // i.e. KCACONCO18
+ROM char const msgPWD[] = 		"&PASSWORD="; //i.e. weather
 ROM char const msgACT[] =		"&action=updateraw";
 ROM char const msgDate[] = 	 	"&dateutc=";
 ROM char const msgTemp[] = 	 	"&tempf=";			// temp in deg F
-ROM char const msgTemp2[] = 	"&temp2f=";			// temp #2  in deg F
 ROM char const msgWindDir[] =  	"&winddir=";			// in deg 0-360
 ROM char const msgWindSpd[] =  	"&windspeedmph=";  	// mph -- Statute I presume --  
 ROM char const msgWindGstSpd[]= "&windgustmph=";
@@ -38,7 +37,8 @@ ROM char const msgSolar[]=	 	"&solarradiation=";	// in Watts per sq meter
 //ROM char const msgWingGstSpd10m[]= "&windgustmph_10m=";
 //ROM BYTE const msgWingGstDir10m[]= "&windgustdir_10m=300";
 //ROM BYTE const msgWingGstDir[]= "&windgustdir=300";
-//ROM BYTE const msgRH[]=		 	"&humidity=25";		// Relative humidity in %
+ROM BYTE const msgDPt[]=		"&dewptf=";			// Relative humidity in %
+ROM BYTE const msgRH[]=		 	"&humidity=";		// Relative humidity in %
 //ROM BYTE const msgVis[]=	 	"&visibility=10";		// in NAUTICAL miles ( strange, wind is in mph..)
 // additionally the following could be added.
 // weather - [text] -- metar style (+RA)
@@ -55,8 +55,6 @@ static TCP_SOCKET tcpSocketUser = INVALID_SOCKET;
 // Initialize the IP address to Weather Underground.com IP address 
 
 
-
-
 BYTE Wind_counts[WX_UPLINK_INTERVAL]; 		// array to collect the 15 1sec 8 bit count samples between uplinks 
 
 //WORD Wind_gst10Min;
@@ -69,8 +67,9 @@ unsigned short Wind_gst;		// in 1/10 Statute Mile
 unsigned short Wind_dir;		// in degree 0-359
 unsigned short Solar_rad;		// estimate of watts per sq meter 
 unsigned short Baro_Inch;       // in 1/100 of an inch 
-unsigned short Temp_F;			// in 1/10 of deg F
-
+unsigned short RH;		 		// in Relative Humidity in percent
+unsigned short Temp_F ;			// in 1/10 of deg F
+unsigned short T_dewptF;		// in 1/10 of deg F
 
 static BYTE baro_avg_smpl =0;
 static BYTE baro_avg_ndx = 0;
@@ -108,6 +107,8 @@ TCP_ClientInit( void )
 	Station_elev += appcfgGetc(APPCFG_WX_STATION_ELEVL);
 	
 	
+	
+	
 }	
 static void 
 put_WX_param(ROM char const * pMsg)
@@ -131,7 +132,9 @@ put_WXparam_arg ( ROM char const * pMsg, WORD val, DECIMALS dec)
  	}  		
 
 	p = itoa(val,bu);
-	
+//TODO ?????????????
+// what about negtive Vals ???
+
 	if (dec == ONE)  // format a decimal point and 1/10 digit
 	{
 		i = strlen(bu);
@@ -162,7 +165,10 @@ TCP_ClientTask(void)
     BYTE b;
     WORD i;
     float tmp;
-    	
+    float Temp_c;
+    
+    TRISB_RB6 = 0;		// Make RB6 output -- System LED 		
+  	
     switch (smTcp) 
     {
         case SM_TCP_SEND_ARP:
@@ -172,10 +178,10 @@ TCP_ClientTask(void)
 			    
 			    //Send ARP request for given IP address
                 ARPResolve(&tcpServerNode.IPAddr);
-                
                 tsecMsgSent = TickGetSec(); 				// take snapshot of time
                 smTcp = SM_TCP_WAIT_ARP_RESOLVE;
             }
+                        
             break;
 
         case SM_TCP_WAIT_ARP_RESOLVE:
@@ -183,12 +189,19 @@ TCP_ClientTask(void)
 	        {
 				  // Start up via TCP_Finished so that all the reporting data gets initized 
                   smTcp = SM_TCP_FINISHED;  
+                  tsecMsgSent -= WX_UPLINK_INTERVAL; 	// take snapshot of time and make so that State Finished executes immediatly
             } 
             else
-            {	// if after 4 seconds ARP has not resolved, send request again
+         	{
+               	// if after 4 seconds ARP has not resolved, send request again
 	            if (TickGetSecDiff(tsecMsgSent) >= (TICK16)4)
+	            {
 	            	smTcp = SM_TCP_SEND_ARP;
-            }
+					LATB6 = 1; 		// indicate no connection via red LED  
+					// Note: upon first connect this always fails the first time around -- Not sure why ??
+	             }
+          	}   	
+            
 	        break;    
 
 		case SM_TCP_CONNECT:
@@ -198,7 +211,10 @@ TCP_ClientTask(void)
 			
                //An error occurred during the TCPListen() function
             if (tcpSocketUser == INVALID_SOCKET) 
-                smTcp = SM_TCP_SEND_ARP;			// connection failed, go back to beginning of connection
+            {    
+	            smTcp = SM_TCP_SEND_ARP;		// connection failed, go back to beginning of connection
+    			LATB6 = 1; 		// indicate no connection via red LED 
+            }
             else
             	smTcp = SM_TCP_WAIT_CONNECTED;
            
@@ -217,8 +233,10 @@ TCP_ClientTask(void)
 // while adding more report identifier/data pairs
 // No dynamic checking is done for overflow of the 970 bytes 
 
+					LATB6 = 0; // clear error indication
+	
 					GetRTC();
-						     
+					     
 		            // build HTTP GET request
 		            put_WX_param(msgURL);	
 	            		
@@ -262,8 +280,7 @@ TCP_ClientTask(void)
 		
 					// Send the Temperature
 					put_WXparam_arg ( msgTemp, Temp_F, ONE);
-
-	     
+	    	
 			        // Send the wind speed 
 			        put_WXparam_arg( msgWindSpd, Wind_spd, ONE);
 			        
@@ -281,8 +298,14 @@ TCP_ClientTask(void)
 					
 					// Send the solar radiation index in watts/ sq Meter ( estimated) 
 					put_WXparam_arg ( msgSolar, Solar_rad, NONE);
-							
-					// Must be HTTP 1.0 request for Wunderground to accept it
+	
+					// Send Relative Humidity				
+					put_WXparam_arg(msgRH,RH,NONE);
+					
+					// Send Dew point
+					put_WXparam_arg(msgDPt,T_dewptF, ONE);
+					
+				    // Must be HTTP 1.0 request for Wunderground to accept it
 					put_WX_param(msgHTTP);
 				
 					// Must have header Accept and double NL to finalize the http protocol package:  
@@ -293,16 +316,22 @@ TCP_ClientTask(void)
                     tsecMsgSent = TickGetSec();     //Update with current time
   
                    smTcp = SM_TCP_FINISHED;			// Go to wait for the next update cycle 
-                }    
+                }  
+                else // not PUT ready
+                {
+	            }   
             }
             else 
 	        {
-		        // if there is no connection after 60 seconds go back and try to establish connection again
-		      if (TickGetSecDiff(tsecMsgSent) >= (TICK16)60)
+		        // if there is no connection after 15 seconds go back and try to establish connection again
+		      if (TickGetSecDiff(tsecMsgSent) >= (TICK16)15)
               { 
+				LATB6 = 1; 		// indicate no connection via red LED
+// latch error in yellow led 
+LATF0 = 1; // yellow LED
                    TCPDisconnect(tcpSocketUser);
                    smTcp = SM_TCP_SEND_ARP;			// Try restarting  the connection 
-                   TRISB_RB6 = 0;LATB6 = 1; 		// indicate no connection via red LED 	
+     	
               }
          	}   
             break;
@@ -312,13 +341,13 @@ TCP_ClientTask(void)
         case SM_TCP_FINISHED: 		// Finished sending a report, now waiting for the next interval 
               if (TickGetSecDiff(tsecMsgSent) >= WX_UPLINK_INTERVAL)	// every 15 seconds send a new data package 
               { 
-	                TRISB_RB6 = 0; LATB6 = 0; // clear error indication
+     
 	              	
-	              	
-	                // Get the Temp reading from the external analog sensor 
-					tmp =  AdcValues[0] * 0.361;   	// Calculate  deg K
-					tmp -= 273.15;				 	// Convert to deg C
-					tmp = tmp*9/5;				 	// Convert to deg F
+	              	 
+	                // Get the Temp reading from the external LM334 sensor 
+					tmp =  AdcValues[0] * 0.361;   		// Calculate  deg K
+					Temp_c = tmp - 273.15;			 	// Convert to deg C
+					tmp = Temp_c*9/5;				 	// Convert to deg F
 					tmp += 32;
 					Temp_F = tmp*10;
 					
@@ -429,6 +458,29 @@ TCP_ClientTask(void)
 					Solar_rad = AdcValues[3]* 1.4; // estimated watts per Sq Meter, based on max Vout 3.35V and roughly 1KW per sq meter max radiation 
 	  				if ( Solar_rad < 10 ) 
 	  					Solar_rad =0;
+	  					
+	  					
+	  				// Relavive humidity -- Sensor HIH 4030	
+	  				// formual:   RH_uncomp = (Vout/Vsup - 0.16 ) / 0.0062
+	  				// V_out = VAdc = ADC_Count * Vref/1023
+	  				// Vref == Vsup == 5.0 ... Therefore
+	  				//	RH_uncomp = (ADC_Count/1023-0.16 )/0.0062 
+	  			
+	  				tmp =  (AdcValues[4]/1023.0 - 0.16)/0.0062;
+	  				
+	  				// Compensation for temperature 
+	  				// RH = RH_uncomp / ( 1.0546 - 0.00216 * Temp_c)	
+	  				tmp = tmp /(1.0546 - 0.00216 * Temp_c);
+	  				RH = tmp; 	// convert to integer in percent
+	  				
+	  				// Calculate DewPoint from Temp and humidity
+	  				// simple approximation formula:
+	  				// Td = Temp_c -(100-RH)/5
+	  				
+	  				tmp = (100 - tmp)/5;
+	  				tmp = Temp_c - tmp;
+	  				T_dewptF  = (tmp*9/5+32)*10;		// convert to 1/10 deg F
+	  							
               		
               		smTcp =SM_TCP_CONNECT; 	// reconnectd and send next set of parameters
               }	  	 
@@ -436,8 +488,9 @@ TCP_ClientTask(void)
            	 
             
   		default:					// we should never get here !
- 				TRISB_RB6 = 0;		// Turn on the RED LED to indicate no connection to Wunderground
-                LATB6 = 1; 
+ 	
+                LATB6 = 1; 			// Turns on red System LED
+
  			 break;
        	       		 
 	}

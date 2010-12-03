@@ -39,6 +39,7 @@
 #include "net\i2c.h"
 #include "net\tick.h"
 
+#ifndef NO_LCD
 
 //Keypad buffer - contains received keypad data
 #define KPAD_BUF_SIZE_MASK (KPAD_BUF_SIZE-1)
@@ -312,4 +313,18 @@ BYTE lcdPutRomString(BYTE lcdNum, ROM char* s) {
     
     return 0;
 }
+#else // NO_LCD  -- stubs 
 
+BYTE lcdPutRomString(BYTE lcdNum, ROM char* s)
+ { 
+ return 1;
+ }
+
+BYTE lcdPutString(BYTE lcdNum, BYTE* s) {return 1;}
+BYTE lcdPutArray(BYTE lcdNum, BYTE* s, BYTE len) {return 1;}
+BYTE kpadGetKey(BYTE kpadNum) {return 0;}
+void lcdService(void) {}
+void lcdInit(void) {}
+BYTE lcdGetByte(BYTE lcdNum, BYTE cmd, BYTE* val) {return 1;}
+
+#endif
