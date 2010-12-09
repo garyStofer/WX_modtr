@@ -967,12 +967,15 @@ void appcfgXboard(void)
 //To do this with MPLAB C18 compiler:
 //  nothing has to be done!
 //
+
 #if defined(HI_TECH_C)  //Hi-Tech compiler
     #pragma psect const=eeconfig
 #elif defined(__18CXX)  //MPLAB C18 compiler
     #pragma romdata EESECT=0xf00000
     //#pragma romdata eeconfig=0xf00000
 #endif
+
+// HARDCODED EEPROM_DEFAULTS 
 ROM BYTE eeConfigArray[] = {
     //MyIPAddr
     MY_DEFAULT_IP_ADDR_BYTE1,   //Offset 0
@@ -1075,7 +1078,7 @@ ROM BYTE eeConfigArray[] = {
     //SerialNumber
     0,                                  //Offset 51
     0,
-    //Username - Is a null terminated string. Max 8 char + null termination char
+    //Username "admin"- Is a null terminated string. Max 8 char + null termination char
     'a',                                //Offset = 53
     'd',                                //Offset = 54
     'm',                                //Offset = 55
@@ -1085,7 +1088,7 @@ ROM BYTE eeConfigArray[] = {
     '\0',                               //Offset = 59
     '\0',                               //Offset = 60
     '\0',                               //Offset = 61
-    //Password - Is a null terminated string. Max 8 char + null termination char
+    //Password "pw"- Is a null terminated string. Max 8 char + null termination char
     'p',                                //Offset = 62
     'w',                                //Offset = 63
     '\0',                               //Offset = 64
@@ -1097,8 +1100,8 @@ ROM BYTE eeConfigArray[] = {
     '\0',                               //Offset = 70
 
 
-    //NetBIOS Name - Is a 16 character name, all in uppercase. All unused characters must be spaces! Must end with 0!
-    'M',                                // Offset = 71
+    //NetBIOS Name - Is a 16 character name, all in uppercase. All unused characters must be spaces! Must end with 0!, I.e. "WXBOARD"
+    'W',                                // Offset = 71
     'X',                                // Offset = 72
     #if defined(DEMO_MODE)
     'D',                                // Offset = 73
@@ -1243,13 +1246,14 @@ ROM BYTE eeConfigArray[] = {
     102,			// Offset 146, Wunderground IP address byte 1
     136,			// offset 147, Wunderground IP address byte 2
     125,			// Offset 148, Wunderground IP address byte 3
-    'K','C','A','C','O','N','C','O','1','8',0,0,0,0,0,0, // Offset 149, Wunderground station ID,16bytes
-    'w','e','a','t','h','e','r',0,0,0,0,0,0,0,0,0,		 // Offset 165, Wunderfround password String, 16bytes
-    82,0												 // Offset 181, Station altitude in feet, 2 bytes
-    
-   
-    
-};
+    'K','C','A','.','.','.',0,0,0,0,0,0,0,0,0,0, // Offset 149, Wunderground station ID,16bytes i.e. "KCACONCO18"
+    'p','w',0,0,0,0,0,0,0,0,0,0,0,0,0,0,	     // Offset 165, Wunderfround password String, 16bytes I.E. "weather"
+    0,0,										 // Offset 181, Station altitude in feet, 2 bytes
+    0x7f,											 // Temp_cal
+    0x7f,											 // Baro_cal	
+    0x7f,											 // Hyg_cal
+    0x7f											 // Sol_cal
+ };
 
 //Fill up remaining space so that eeBusConfigArray starts at EEPROM address 256
 ROM BYTE eeconfigArrayFill[256-sizeof(eeConfigArray)] = {0};
@@ -1301,3 +1305,7 @@ ROM BYTE eeBusConfigArray[] = {
     0x99,
     
 };
+
+
+
+

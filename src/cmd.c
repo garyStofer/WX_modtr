@@ -1,4 +1,3 @@
-
  /**
  * @brief           Commands
  * @file            cmd.c
@@ -149,35 +148,35 @@ static WORD
 cmdGetWordVar2(BYTE ref, BYTE* val, WORD w, BYTE dec_places)
 {
 	BYTE i=0;
+
     
     if ( ref == (BYTE)HTTP_START_OF_VAR )
     {
         memset( strTmp,0,STRTMP_MAXSIZE);
-
-		// Convert and suppress all leading zeros
-		if (w/1000) 
-			strTmp[i++] = w /1000 +'0'; w %=1000;
-		
-		if (w/100)
-			strTmp[i++] = w /100 +'0'; w %=100;
-		
-		if (dec_places == 2 )
+		itoa(w,strTmp);
+			
+		if ( w == 0 && dec_places )
 		{
-			if (i==0)
-				strTmp[i++]='0';	// Add in leading 0
-			strTmp[i++]='.';
+			strTmp[1]='.';
+			strTmp[2]='0';	
 		}
-		if (w/10)
-			strTmp[i++] = w /10 +'0'; w %= 10;
-		
-		if (dec_places == 1 )
+		else
 		{
-			if (i==0)
-				strTmp[i++]='0';	// add in leading 0
-			strTmp[i++]='.';
+			i = strlen(strTmp);
+			
+			if (dec_places ==1)
+			{
+				strTmp[i] = strTmp[i-1];
+				strTmp[i-1] = '.';
+			}
+			
+			if (dec_places ==2)
+			{
+				strTmp[i] = strTmp[i-1];
+				strTmp[i-1] = strTmp[i-2];
+				strTmp[i-2]='.';
+			}
 		}
-		strTmp[i++] = w+'0';
-		  
     }
     *val = strTmp[(BYTE)ref];
     if ( strTmp[(BYTE)ref] == '\0' )
@@ -603,7 +602,7 @@ WORD execNameValueCmd(BYTE * name, BYTE * value, BYTE user) {
 
 
     /////////////////////////////////////////////////
-    //Update Configuration value
+    //Update Configuration value ('k' and 'u' )
     if ((name[0] == CMDGROUP_CONFIG) || (name[0] == CMDGROUP_BUSCONFIG)) {
         BYTE bTmp;
         WORD cfgOffset; //Offset of configuration byte
@@ -956,12 +955,12 @@ WORD execNameValueCmd(BYTE * name, BYTE * value, BYTE user) {
 	    switch(name[1]) 
 	    {
 	    	case CMDCODE_WX_ID:
-	    		strcpyram2ee(APPCFG_WX_SATIONID, (char *)value, 16);
+	    		strcpyram2ee(APPCFG_WX_SATIONID, (char *)value, 15);
 	    		break;
 	    
 	    	case CMDCODE_WX_PW:
-	    		strcpyram2ee(APPCFG_WX_PASSWD, (char *)value, 16);
-	    		break;
+	       	    strcpyram2ee(APPCFG_WX_PASSWD, (char *)value, 15);
+	       		break;
 	    
 	    	case CMDCODE_WX_Elev:
 	    		tmp2= atoi(value); 
@@ -971,23 +970,7 @@ WORD execNameValueCmd(BYTE * name, BYTE * value, BYTE user) {
 	    		tmp= tmp2&0xff;
 	    		appcfgPutc( APPCFG_WX_STATION_ELEVH, tmp);
 	    		break;
-	    		
-	    	case CMDCODE_WX_IP_0: 
-	    		tmp = atoi(value);
-	    		appcfgPutc(APPCFG_WX_IP_ADDR0, tmp);
-	    		break;
-	    	case CMDCODE_WX_IP_1:
-	    		tmp = atoi(value); 
-	    		appcfgPutc(APPCFG_WX_IP_ADDR1, tmp);
-	    		break;
-	    	case CMDCODE_WX_IP_2: 
-	    		tmp = atoi(value);
-	    		appcfgPutc(APPCFG_WX_IP_ADDR2, tmp);
-	    		break;
-	    	case CMDCODE_WX_IP_3: 
-	    		tmp = atoi(value);
-	    		appcfgPutc(APPCFG_WX_IP_ADDR3, tmp);
-	    		break;
+
 	    } 
 	} 
     //We received a general command with value
@@ -1624,7 +1607,7 @@ WORD cmdGetTag(GETTAG_INFO* pGetTagInfo)
         }
         else if (tagVal == VARVAL_GEN_WX_RH )
         {
-           	 pGetTagInfo->ref = cmdGetWordVar2(ref, pGetTagInfo->val,RH, 0) ;
+           	 pGetTagInfo->ref = cmdGetWordVar2(ref, pGetTagInfo->val,RH_10, 1) ;
            	 return 1;
         }
         else if (tagVal == VARVAL_GEN_WX_DWPT )
@@ -2047,7 +2030,8 @@ static WORD cmdGetEepromStringVar(BYTE ref, BYTE* val, WORD adr)
 
     //Read value from EEPROM
     *val = EEDATA;
-    if (EEDATA == '\0' )
+    
+	if (EEDATA == '\0' )
         return HTTP_END_OF_VAR;
 
     (BYTE)ref++;

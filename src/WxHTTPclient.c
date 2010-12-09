@@ -1,11 +1,13 @@
 #include <string.h>
 #include "projdefs.h"
+#include "busser1.h"
 #include "net\tick.h"
 #include "net\helpers.h"
 #include "net\tcp.h"
 #include "net\arp.h"
 #include "net\arptsk.h"
 #include "rtc.h"
+#include "math.h"
 #include "WxHTTPclient.h"
 
 
@@ -48,7 +50,7 @@ ROM char const msgHTTP[] = 		" HTTP/1.0\r\n";				// Requierd, Wunderground does 
 ROM char const msgAccept[] = 	"Accept: text/html\r\n\r\n";	// required plus contains the double NL for termination of HTTP
 
  
-static NODE_INFO tcpServerNode;       //Remote server informatio
+static NODE_INFO tcpServerNode;       //Remote server information
 static TCP_CLIENT_STATE smTcp = SM_TCP_SEND_ARP;
 static TCP_SOCKET tcpSocketUser = INVALID_SOCKET;
 
@@ -68,6 +70,7 @@ unsigned short Wind_dir;		// in degree 0-359
 unsigned short Solar_rad;		// estimate of watts per sq meter 
 unsigned short Baro_Inch;       // in 1/100 of an inch 
 unsigned short RH;		 		// in Relative Humidity in percent
+unsigned short RH_10;		 	// in Relative Humidity in 1/10 of percent
 unsigned short Temp_F ;			// in 1/10 of deg F
 unsigned short T_dewptF;		// in 1/10 of deg F
 
@@ -75,6 +78,7 @@ static BYTE baro_avg_smpl =0;
 static BYTE baro_avg_ndx = 0;
 static float Baro_Avg[AGV_INTERVAL]= {0};
 static WORD Station_elev;
+static signed char Temp_cal,Baro_cal,Hyg_cal,Sol_cal;
 
 void
 TCP_ClientInit( void )
@@ -106,54 +110,71 @@ TCP_ClientInit( void )
 	Station_elev = Station_elev<<8;
 	Station_elev += appcfgGetc(APPCFG_WX_STATION_ELEVL);
 	
-	
+	Temp_cal = appcfgGetc(APPCFG_WX_STATION_TEMP_CAL)-128;
+	Baro_cal = appcfgGetc(APPCFG_WX_STATION_BARO_CAL)-128;
+	Hyg_cal = appcfgGetc(APPCFG_WX_STATION_HYG_CAL)-128;
+	Sol_cal = appcfgGetc(APPCFG_WX_STATION_SOL_CAL)-128;
 	
 	
 }	
 static void 
-put_WX_param(ROM char const * pMsg)
+put_WX_param(ROM char const * pMsg, BOOL SerOut)
 {
 	BYTE b;
 	while ( b = *pMsg++)
-   			TCPPut(tcpSocketUser, b);
-  
+	{
+		TCPPut(tcpSocketUser, b);
+		if (SerOut)
+			serPutByte(b);
+ 	} 
 }	 
 static void 
-put_WXparam_arg ( ROM char const * pMsg, WORD val, DECIMALS dec)
+put_WXparam_arg ( ROM char const * pMsg, WORD w, DECIMALS dec_places, BOOL SerOut)
 {
-	BYTE b;
-	char bu[12]; 		// for itoa 
-    char *p;			// for strings in memory
-    WORD i;
+	BYTE i,b;
+	char strTmp[12]; 	 
+   
 	
 	if ( pMsg != NULL )
 	{
-		put_WX_param(pMsg);
+		put_WX_param(pMsg, SerOut);
  	}  		
-
-	p = itoa(val,bu);
-//TODO ?????????????
-// what about negtive Vals ???
-
-	if (dec == ONE)  // format a decimal point and 1/10 digit
+	i=0;
+	memset( strTmp,0,12);
+// TODO: this conversion to string could be consolidated with the similar code in cmd.c 
+	itoa(w,strTmp);
+		
+	if ( w == 0 && dec_places )
 	{
-		i = strlen(bu);
-		bu[i] = bu[i-1]; // put a decimal point and shift the 1/10 digit one to the right
-		bu[i-1] = '.';
-		bu[i+1] = 0;
-		p = bu;
-	}else if ( dec == TWO ) 
+		strTmp[1]='.';
+		strTmp[2]='0';	
+	}
+	else
 	{
-		i = strlen(bu);
-		bu[i] = bu[i-1]; // put a decimal point and shift the 1/10 digit one to the right
-		bu[i-1] = bu[i-2];
-		bu[i-2] = '.';
-		bu[i+1] = 0;
-		p = bu;	
-	}	
+		i = strlen(strTmp);
+		
+		if (dec_places ==1)
+		{
+			strTmp[i] = strTmp[i-1];
+			strTmp[i-1] = '.';
+		}
+		
+		if (dec_places ==2)
+		{
+			strTmp[i] = strTmp[i-1];
+			strTmp[i-1] = strTmp[i-2];
+			strTmp[i-2]='.';
+		}
+	}
  	
-	while ( b = *p++ ) 
+ 	
+ 	i = 0;
+	while ( b = strTmp[i++] ) 
+	{
 		TCPPut(tcpSocketUser, b);
+		if (SerOut)
+			serPutByte(b);
+	}	
 
 }
 //Create a TCP socket for receiving and sending data
@@ -236,12 +257,13 @@ TCP_ClientTask(void)
 					LATB6 = 0; // clear error indication
 	
 					GetRTC();
-					     
+				 	serPutByte('\n');
+   			     	serPutByte('\r');    
 		            // build HTTP GET request
-		            put_WX_param(msgURL);	
+		            put_WX_param(msgURL, FALSE);	
 	            		
 					// add in the parameters Wunderground needs 
-					put_WX_param(msgID);
+					put_WX_param(msgID,FALSE);
 					
 					bu[16] = 0;
 					strcpyee2ram(bu, APPCFG_WX_SATIONID, 16); 
@@ -249,67 +271,72 @@ TCP_ClientTask(void)
 					while ( b = bu[i++])
    						TCPPut(tcpSocketUser, b);
   				
-  					put_WX_param(msgPWD);
+  					put_WX_param(msgPWD,FALSE);
 					strcpyee2ram(bu, APPCFG_WX_PASSWD, 16); 
 					i = 0;
 					while ( b = bu[i++])
    						TCPPut(tcpSocketUser, b);
  					
- 					put_WX_param(msgACT);
+ 					put_WX_param(msgACT,FALSE);
 					
 					// Begin of dateutc			
-					put_WX_param(msgDate);
+					put_WX_param(msgDate,FALSE);
 					
-					put_WXparam_arg( NULL,RTC.Year, NONE);
+					put_WXparam_arg( NULL,RTC.Year, NONE,FALSE);
+ 					TCPPut(tcpSocketUser, '-'); 
+					
+					put_WXparam_arg( NULL,RTC.Month, NONE,FALSE);
 					TCPPut(tcpSocketUser, '-'); 
 					
-					put_WXparam_arg( NULL,RTC.Month, NONE);
-					TCPPut(tcpSocketUser, '-'); 
-					
-					put_WXparam_arg( NULL,RTC.Date, NONE);
+					put_WXparam_arg( NULL,RTC.Date, NONE,FALSE);
 					TCPPut(tcpSocketUser, ' '); 
 
-					put_WXparam_arg( NULL,RTC.Hour, NONE);
+					put_WXparam_arg( NULL,RTC.Hour, NONE,FALSE);
 					TCPPut(tcpSocketUser, ':');
 					
-					put_WXparam_arg( NULL,RTC.Min, NONE);
+					put_WXparam_arg( NULL,RTC.Min, NONE,FALSE);
 					TCPPut(tcpSocketUser, ':');
 					
-					put_WXparam_arg( NULL,RTC.Sec, NONE);
+					put_WXparam_arg( NULL,RTC.Sec, NONE,FALSE);
 				    // End of dateutc
 		
 					// Send the Temperature
-					put_WXparam_arg ( msgTemp, Temp_F, ONE);
+					put_WXparam_arg ( msgTemp, Temp_F, ONE,TRUE);
+									
+					// Send Dew point
+					put_WXparam_arg(msgDPt,T_dewptF, ONE,TRUE);
+					
+					// Send Relative Humidity				
+					put_WXparam_arg(msgRH,RH,NONE,TRUE);
 	    	
 			        // Send the wind speed 
-			        put_WXparam_arg( msgWindSpd, Wind_spd, ONE);
+			        put_WXparam_arg( msgWindSpd, Wind_spd, ONE,TRUE);
 			        
 			       	// Send the Windgust 
-					put_WXparam_arg ( msgWindGstSpd, Wind_gst, ONE);
+					put_WXparam_arg ( msgWindGstSpd, Wind_gst, ONE,TRUE);
 					
 					// Send the 10Min Windgust speed  --------- Doesn't seem to get recorded by Wunderground 
 					//	put_WXparam_arg ( msgWindGstSpd10m, Wind_gst10Min, TRUE);
 					
 					// Send the Wind Direction 
-					put_WXparam_arg ( msgWindDir, Wind_dir, NONE);
+					put_WXparam_arg ( msgWindDir, Wind_dir, NONE,TRUE);
+
 					
 					// Send the Barometer reading, convert to inches Mercury at 0 degC
-					put_WXparam_arg ( msgBaro, Baro_Inch, TWO);
+					put_WXparam_arg ( msgBaro, Baro_Inch, TWO,TRUE);
 					
 					// Send the solar radiation index in watts/ sq Meter ( estimated) 
-					put_WXparam_arg ( msgSolar, Solar_rad, NONE);
+					put_WXparam_arg ( msgSolar, Solar_rad, NONE,TRUE);
 	
-					// Send Relative Humidity				
-					put_WXparam_arg(msgRH,RH,NONE);
-					
-					// Send Dew point
-					put_WXparam_arg(msgDPt,T_dewptF, ONE);
+				
 					
 				    // Must be HTTP 1.0 request for Wunderground to accept it
-					put_WX_param(msgHTTP);
+					put_WX_param(msgHTTP,FALSE);
 				
 					// Must have header Accept and double NL to finalize the http protocol package:  
-					put_WX_param(msgAccept);
+					put_WX_param(msgAccept,FALSE);
+   			     
+   			    
    			     
    			         //Send contents of transmit buffer, and free buffer for next time around 
                     b =  TCPFlush(tcpSocketUser);
@@ -323,12 +350,11 @@ TCP_ClientTask(void)
             }
             else 
 	        {
-		        // if there is no connection after 15 seconds go back and try to establish connection again
-		      if (TickGetSecDiff(tsecMsgSent) >= (TICK16)15)
+		        // if there is no connection after 40 seconds go back and try to establish connection again
+		      if (TickGetSecDiff(tsecMsgSent) >= (TICK16)40)
               { 
-				LATB6 = 1; 		// indicate no connection via red LED
-// latch error in yellow led 
-LATF0 = 1; // yellow LED
+				   LATB6 = 1; // indicate no connection via red LED
+				   LATF0 = 1; // latch error in yellow led 
                    TCPDisconnect(tcpSocketUser);
                    smTcp = SM_TCP_SEND_ARP;			// Try restarting  the connection 
      	
@@ -341,13 +367,26 @@ LATF0 = 1; // yellow LED
         case SM_TCP_FINISHED: 		// Finished sending a report, now waiting for the next interval 
               if (TickGetSecDiff(tsecMsgSent) >= WX_UPLINK_INTERVAL)	// every 15 seconds send a new data package 
               { 
-     
-	              	
-	              	 
+// to immediatly affect the next reading by the cal factors changed       
+//Temp_cal = appcfgGetc(APPCFG_WX_STATION_TEMP_CAL)-128;
+//Baro_cal = appcfgGetc(APPCFG_WX_STATION_BARO_CAL)-128;
+//Hyg_cal = appcfgGetc(APPCFG_WX_STATION_HYG_CAL)-128;
+//Sol_cal = appcfgGetc(APPCFG_WX_STATION_SOL_CAL)-128;
+		           // LM134/234 is a current source with a temp coefficient of ~214uV/°K
+		           // The current, Iset  is calculated according to (see page5 of data sheet)
+		           // Iset = 227.3983e-6 * T°K / R_set (typical) 
+		           // °K = Iset*R_set/227.39;
+		           // Iset = V_Rload / R_load;
+		           // V_Rload = Adc * Vref / 1023 (Vref= 5.0) == ADC * 4.8875e-3
+		           // with R_set and R_load at 152O and 9Ko resp, V_Load = 13.4643mv per °K
+		           // with Vref at 5V and 10 bit ADC  T°K = ADC * ( 5/1023/13.4643)  == 0.363
+
+           	               	              	 
 	                // Get the Temp reading from the external LM334 sensor 
-					tmp =  AdcValues[0] * 0.361;   		// Calculate  deg K
-					Temp_c = tmp - 273.15;			 	// Convert to deg C
-					tmp = Temp_c*9/5;				 	// Convert to deg F
+					tmp =  AdcValues[0] * 0.36300; 		// Calculate  °K
+					tmp *= 1 + 0.0001 * Temp_cal; 		// apply gain adjustment 
+					Temp_c = tmp - 273.15;			 	// Convert to °C
+					tmp = Temp_c*9/5;				 	// Convert to °F
 					tmp += 32;
 					Temp_F = tmp*10;
 					
@@ -429,6 +468,7 @@ LATF0 = 1; // yellow LED
       	  			// do the math in float Kilo_pascal first and then convert to Inches mercury
               	  	 tmp = (AdcValues[2]-41) * 0.1086130118388182904;
               	  	 tmp += 15;
+              	  	 tmp *= 1.0 + 0.0001 * Baro_cal; 		// apply Calibration adjustment - gain  
               	  	 tmp += Station_elev * 3.65625122e-3 ; // pressure drop for elevation in standard atmosphere 
 					
 				
@@ -454,8 +494,10 @@ LATF0 = 1; // yellow LED
 					Baro_Inch = tmp* 29.53;
 					
 					
-					// estimation of solar radiation: Not scientific, not lenar, just a guesstimate 
-					Solar_rad = AdcValues[3]* 1.4; // estimated watts per Sq Meter, based on max Vout 3.35V and roughly 1KW per sq meter max radiation 
+					// estimation of solar radiation: Not scientific, not linear, just a guesstimate 
+					tmp = AdcValues[3]* 2.8; // estimated watts per Sq Meter, based on max Vout ~1.7V loaded  and roughly 1KW per sq meter max radiation 
+	  				tmp *= 1.0 + 0.007 * Sol_cal;
+	  				Solar_rad = tmp;
 	  				if ( Solar_rad < 10 ) 
 	  					Solar_rad =0;
 	  					
@@ -471,7 +513,9 @@ LATF0 = 1; // yellow LED
 	  				// Compensation for temperature 
 	  				// RH = RH_uncomp / ( 1.0546 - 0.00216 * Temp_c)	
 	  				tmp = tmp /(1.0546 - 0.00216 * Temp_c);
-	  				RH = tmp; 	// convert to integer in percent
+	  				tmp *= 1 + 0.001 *Hyg_cal;
+	  				RH = tmp+0.5; 	// convert to integer in percent
+	  				RH_10 = (tmp+0.5)*10; // in 1/100 of a percent -- for better resolution of the webpage readout 
 	  				
 	  				// Calculate DewPoint from Temp and humidity
 	  				// simple approximation formula:
@@ -480,9 +524,26 @@ LATF0 = 1; // yellow LED
 	  				tmp = (100 - tmp)/5;
 	  				tmp = Temp_c - tmp;
 	  				T_dewptF  = (tmp*9/5+32)*10;		// convert to 1/10 deg F
+	  				
+	 //Close approximation methode: 
+	 /*
+	 This expression is based on the August–Roche–Magnus approximation for the saturation vapor pressure of water in air 
+	 as a function of temperature. It is considered valid for
+     		0 °C < T < 60 °C
+     		1% < RH < 100%
+     		0 °C < Td < 50 °C 
+     
+	 Formula: 
+	 a = 17.271
+	 b = 237.7 °C
+	 Tc = Temp in Celsius
+	 Td = Dew point in Celsius
+	 RH = Relative Humidity
+	 Y = (a*Tc /(b+Tc)) + ln(RH/100)  
+	 Td = b * Y / (a - Y)
+	 */ 				
 	  							
-              		
-              		smTcp =SM_TCP_CONNECT; 	// reconnectd and send next set of parameters
+               		smTcp =SM_TCP_CONNECT; 	// reconnectd and send next set of parameters
               }	  	 
            	 break;
            	 
@@ -499,14 +560,17 @@ LATF0 = 1; // yellow LED
 	// read the response from Wunderground -- Needs to be the word "success" 
 	if( TCPIsGetReady(tcpSocketUser)  )
 	{
-	 	//len = TCPGetArray(tcpSocketUser, (BYTE *)buff, 200);
+// 		static char buff[100];		
+//	 	TCPGetArrayChr(tcpSocketUser, (BYTE *)buff, 100,0);
+	 
 	 	// the response could strech  over multiple packets ! 
 		// All we want to know if wunderground reported "success" after a pair of "\r\n" 
 		
 // Note: It appears that Wunderground always reports success as long as ID and Password is correct, even though the date 
 // or the data is misformed or missing. a "success" reply does not mean that the data is actually accepted into Wunderground
 // so no evaliation on the response is doen at this time.
-	   	
+//		buff[99] =0;
+//	   	serPutString(buff);
 	   	TCPDiscard( tcpSocketUser); 
 	 } 
 }  

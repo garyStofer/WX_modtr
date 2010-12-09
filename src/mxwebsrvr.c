@@ -123,7 +123,7 @@ BOOL aliveCntrDec;
 //Version number
 // - n = major part, and can be 1 or 2 digets long
 // - mm is minor part, and must be 2 digets long!
-ROM char APP_VER_STR[] = "V3.10b";
+ROM char APP_VER_STR[] = "V3.10C";
 
 
 

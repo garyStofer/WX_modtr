@@ -422,7 +422,8 @@ will display our IP address.</td></tr>
 #define VARVAL_GEN_WX_TEMP 				(0x52)
 #define VARVAL_GEN_WX_BARO				(0x53)
 #define VARVAL_GEN_WX_RH				(0x54)
-#define VARVAL_GEN_WX_DWPT				(0x55)
+#define VARVAL_GEN_WX_DWPT				(0x55)
+
 
 /////////////////////////////////////////////////
 // Variable Group - Config Tags
@@ -1006,13 +1007,11 @@ send by custom software.
 #define CMDCODE_GEN_PASSWORD ('p')          //The entered password
 
 #define CMDGROUP_WX		('w')		// The weather station related Get commnads
-#define CMDCODE_WX_ID ('i')		// Station ID
-#define CMDCODE_WX_PW ('p')		// Station password
+#define CMDCODE_WX_ID ('i')			// Station ID
+#define CMDCODE_WX_PW ('p')			// Station password
 #define CMDCODE_WX_Elev ('e')		// Station elevation
-#define CMDCODE_WX_IP_0 ('0')		// Station IP address 0
-#define CMDCODE_WX_IP_1 ('1')
-#define CMDCODE_WX_IP_2 ('2')
-#define CMDCODE_WX_IP_3 ('3')
+// all other WX reated config is done via the %knn tag and knn command  
+
 
 
 

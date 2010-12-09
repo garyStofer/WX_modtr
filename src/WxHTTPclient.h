@@ -30,7 +30,7 @@ extern unsigned short Baro_Inch;					// Pressure in Kilo Pascal normailzed to se
 extern unsigned short Temp_F;					// Temp in F
 extern unsigned short T_dewptF;
 extern unsigned short RH;
-
+extern unsigned short RH_10;
 #endif   
 
 
