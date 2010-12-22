@@ -272,6 +272,8 @@ void serPutByte(BYTE c) {
  * @param c     Byte to write out on the serial port
  */
 void serPutByteHex(BYTE c) {
+	serPutByte('0');
+	serPutByte('x');
     serPutByte( (c > 0x9f) ? ((c>>4)&0x0f)+0x57 : ((c>>4)&0x0f)+'0' );
     serPutByte( ((c&0x0f)>9) ? (c&0x0f)+0x57 : (c&0x0f)+'0' );
 }

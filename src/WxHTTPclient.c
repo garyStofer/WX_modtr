@@ -4,6 +4,7 @@
 #include "net\tick.h"
 #include "net\helpers.h"
 #include "net\tcp.h"
+#include "net\dns.h"
 #include "net\arp.h"
 #include "net\arptsk.h"
 #include "rtc.h"
@@ -15,43 +16,44 @@ extern WORD getTCPMaxDataLenght( void);
 
 //TCP State machine
 typedef enum _TCP_CLIENT_STATE {
-	SM_TCP_SEND_ARP =        	0,
-	SM_TCP_WAIT_ARP_RESOLVE     ,
-	SM_TCP_ARP_RESOLVED         ,
-	SM_TCP_CONNECT				, 
-	SM_TCP_WAIT_CONNECTED		,
-	SM_TCP_FINISHED         	
+	SM_HTTP_DNS_WAIT_RESOLVE =0,
+	SM_HTTP_DNS_RESOLVED,
+	SM_HTTP_SEND_ARP,
+	SM_HTTP_WAIT_ARP_RESOLVE     ,
+	SM_HTTP_ARP_RESOLVED         ,
+	SM_HTTP_CONNECT				, 
+	SM_HTTP_WAIT_CONNECTED		,
+	SM_HTTP_FINISHED         	
 } TCP_CLIENT_STATE;
 
 typedef enum _DECIMALS { NONE=0, ONE, TWO } DECIMALS;
-
-ROM char const msgURL[] = 	 	"GET /weatherstation/updateweatherstation.php";
-ROM char const msgID[] = 		"?ID="; // i.e. KCACONCO18
-ROM char const msgPWD[] = 		"&PASSWORD="; //i.e. weather
-ROM char const msgACT[] =		"&action=updateraw";
-ROM char const msgDate[] = 	 	"&dateutc=";
-ROM char const msgTemp[] = 	 	"&tempf=";			// temp in deg F
-ROM char const msgWindDir[] =  	"&winddir=";			// in deg 0-360
-ROM char const msgWindSpd[] =  	"&windspeedmph=";  	// mph -- Statute I presume --  
-ROM char const msgWindGstSpd[]= "&windgustmph=";
-ROM char const msgBaro[]=	 	"&baromin=";		// in inches Mercury
-ROM char const msgSolar[]=	 	"&solarradiation=";	// in Watts per sq meter
+static ROM char const msgURL[] = 	 	"GET /weatherstation/updateweatherstation.php";
+static ROM char const msgID[] = 		"?ID="; // i.e. KCA....
+static ROM char const msgPWD[] = 		"&PASSWORD="; //
+static ROM char const msgACT[] =		"&action=updateraw";
+static ROM char const msgDate[] = 	 	"&dateutc=";
+static ROM char  const msgTemp[] = 	 	"&tempf=";			// temp in deg F
+static ROM char const msgWindDir[] =  	"&winddir=";			// in deg 0-360
+static ROM char const msgWindSpd[] =  	"&windspeedmph=";  	// mph -- Statute I presume --  
+static ROM char const msgWindGstSpd[]= "&windgustmph=";
+static ROM char const msgBaro[]=	 	"&baromin=";		// in inches Mercury
+static ROM char const msgSolar[]=	 	"&solarradiation=";	// in Watts per sq meter
 //ROM char const msgWingGstSpd10m[]= "&windgustmph_10m=";
 //ROM BYTE const msgWingGstDir10m[]= "&windgustdir_10m=300";
 //ROM BYTE const msgWingGstDir[]= "&windgustdir=300";
-ROM BYTE const msgDPt[]=		"&dewptf=";			// Relative humidity in %
-ROM BYTE const msgRH[]=		 	"&humidity=";		// Relative humidity in %
+static ROM BYTE const msgDPt[]=			"&dewptf=";			// Relative humidity in %
+static ROM BYTE const msgRH[]=		 	"&humidity=";		// Relative humidity in %
 //ROM BYTE const msgVis[]=	 	"&visibility=10";		// in NAUTICAL miles ( strange, wind is in mph..)
 // additionally the following could be added.
 // weather - [text] -- metar style (+RA)
 // clouds - [text] -- SKC, FEW, SCT, BKN, OVC
 
-ROM char const msgHTTP[] = 		" HTTP/1.0\r\n";				// Requierd, Wunderground does not serve 0.9 http-- Do not remove the leading space
-ROM char const msgAccept[] = 	"Accept: text/html\r\n\r\n";	// required plus contains the double NL for termination of HTTP
+static ROM char const msgHTTP[] = 		" HTTP/1.0\r\n";				// Requierd, Wunderground does not serve 0.9 http-- Do not remove the leading space
+static ROM char const msgAccept[] = 	"Accept: text/html\r\n\r\n";	// required plus contains the double NL for termination of HTTP
 
  
 static NODE_INFO tcpServerNode;       //Remote server information
-static TCP_CLIENT_STATE smTcp = SM_TCP_SEND_ARP;
+static TCP_CLIENT_STATE smTcp ;
 static TCP_SOCKET tcpSocketUser = INVALID_SOCKET;
 
 // Initialize the IP address to Weather Underground.com IP address 
@@ -64,32 +66,30 @@ BYTE Wind_counts[WX_UPLINK_INTERVAL]; 		// array to collect the 15 1sec 8 bit co
 //static BYTE gust_ndx;
 
 //TODO: Could group these weather related vars into one structure 
-unsigned short Wind_spd;		// in 1/10 Statute Mile  
-unsigned short Wind_gst;		// in 1/10 Statute Mile 
-unsigned short Wind_dir;		// in degree 0-359
+unsigned short Wind_spd=0;		// in 1/10 Statute Mile  
+unsigned short Wind_gst=0;		// in 1/10 Statute Mile 
+unsigned short Wind_dir=0;		// in degree 0-359
 unsigned short Solar_rad;		// estimate of watts per sq meter 
-unsigned short Baro_Inch;       // in 1/100 of an inch 
-unsigned short RH;		 		// in Relative Humidity in percent
-unsigned short RH_10;		 	// in Relative Humidity in 1/10 of percent
-unsigned short Temp_F ;			// in 1/10 of deg F
-unsigned short T_dewptF;		// in 1/10 of deg F
+unsigned short Baro_Inch=2992;       // in 1/100 of an inch 
+unsigned short RH=0;		 		// in Relative Humidity in percent
+unsigned short RH_10=0;		 	// in Relative Humidity in 1/10 of percent
+unsigned short Temp_F =0;			// in 1/10 of deg F
+unsigned short T_dewptF=0;		// in 1/10 of deg F
 
 static BYTE baro_avg_smpl =0;
 static BYTE baro_avg_ndx = 0;
 static float Baro_Avg[AGV_INTERVAL]= {0};
 static WORD Station_elev;
-static signed char Temp_cal,Baro_cal,Hyg_cal,Sol_cal;
+static signed char Temp_cal,Baro_cal,Hyg_cal,Sol_cal, Hyg_cal_offs;
+
+#ifdef STACK_USE_DNS
+IP_ADDR host_addr;
+char URLbuff[40];
+#endif
 
 void
-TCP_ClientInit( void )
+HTTP_ClientInit( void )
 {
-	
-	tcpServerNode.IPAddr.v[0] = appcfgGetc(APPCFG_WX_IP_ADDR0);	// 38
-	tcpServerNode.IPAddr.v[1] = appcfgGetc(APPCFG_WX_IP_ADDR1); //102
-	tcpServerNode.IPAddr.v[2] = appcfgGetc(APPCFG_WX_IP_ADDR2); //136
-	tcpServerNode.IPAddr.v[3] = appcfgGetc(APPCFG_WX_IP_ADDR3); //125
-	
-	smTcp = SM_TCP_SEND_ARP;
 	tcpSocketUser = INVALID_SOCKET;
 	
 	Wind_dir =  Wind_spd = 0;
@@ -110,13 +110,32 @@ TCP_ClientInit( void )
 	Station_elev = Station_elev<<8;
 	Station_elev += appcfgGetc(APPCFG_WX_STATION_ELEVL);
 	
-	Temp_cal = appcfgGetc(APPCFG_WX_STATION_TEMP_CAL)-128;
-	Baro_cal = appcfgGetc(APPCFG_WX_STATION_BARO_CAL)-128;
-	Hyg_cal = appcfgGetc(APPCFG_WX_STATION_HYG_CAL)-128;
-	Sol_cal = appcfgGetc(APPCFG_WX_STATION_SOL_CAL)-128;
-	
-	
+	Temp_cal = appcfgGetc(APPCFG_WX_STATION_TEMP_CAL)-127;
+	Baro_cal = appcfgGetc(APPCFG_WX_STATION_BARO_CAL)-127;
+	Hyg_cal = appcfgGetc(APPCFG_WX_STATION_HYG_CAL)-127;
+	Sol_cal = appcfgGetc(APPCFG_WX_STATION_SOL_CAL)-127;
+	Hyg_cal_offs = appcfgGetc(APPCFG_WX_STATION_HYG_CAL_OFFS)-127;
+
+// Setup DNS with URL
+// Currently not done since it uses a fair amount of RAM & Prog_rom and EEProm space to hold everything related to the URL and DNS code 
+ 
+// If using DNS to find IP for wunderground
+#ifdef STACK_USE_DNS
+    strcpypgm2ram(URLbuff, (ROM char *) "weatherstation.wunderground.com");
+	serPutRomString( (ROM char *) "\n\rUsing DNS on "); 
+	serPutString(URLbuff);
+	smTcp = SM_HTTP_DNS_WAIT_RESOLVE;
+#else	
+	// OR Skip the DNS and go straight to ARP 
+	tcpServerNode.IPAddr.v[0] = appcfgGetc(APPCFG_WX_IP_ADDR0);	// 38
+	tcpServerNode.IPAddr.v[1] = appcfgGetc(APPCFG_WX_IP_ADDR1); //102
+	tcpServerNode.IPAddr.v[2] = appcfgGetc(APPCFG_WX_IP_ADDR2); //136
+	tcpServerNode.IPAddr.v[3] = appcfgGetc(APPCFG_WX_IP_ADDR3); //125
+	serPutRomString( (ROM char *) "\n\rUsing configured IP address for reporting"); 
+	smTcp = SM_HTTP_SEND_ARP;
+#endif	
 }	
+/* Places the string into the TCP put queue as well as the serial output buffer is SerOut flag is set*/
 static void 
 put_WX_param(ROM char const * pMsg, BOOL SerOut)
 {
@@ -128,6 +147,9 @@ put_WX_param(ROM char const * pMsg, BOOL SerOut)
 			serPutByte(b);
  	} 
 }	 
+/* Sends the const message string onto Put_WX_param()then formats argument 'w' according to n decimal points and tacks the 
+	formatted result onto the constant string by putting it into the output queues 
+*/
 static void 
 put_WXparam_arg ( ROM char const * pMsg, WORD w, DECIMALS dec_places, BOOL SerOut)
 {
@@ -166,8 +188,8 @@ put_WXparam_arg ( ROM char const * pMsg, WORD w, DECIMALS dec_places, BOOL SerOu
 			strTmp[i-2]='.';
 		}
 	}
- 	
- 	
+
+	// Now tack on the formatted result to the output 	
  	i = 0;
 	while ( b = strTmp[i++] ) 
 	{
@@ -177,9 +199,11 @@ put_WXparam_arg ( ROM char const * pMsg, WORD w, DECIMALS dec_places, BOOL SerOu
 	}	
 
 }
+/* This function is the HTTP client used to send the weather data out via HTTP 'GET" commands encoded on the URL 
+   The state machine goes through the adress resolution protocol ARP to get a  */
 //Create a TCP socket for receiving and sending data
 void
-TCP_ClientTask(void)
+HTTP_Client(void)
 {
     static TICK16 tsecMsgSent;        //Time last message was sent
     char bu[17];
@@ -189,35 +213,56 @@ TCP_ClientTask(void)
     float Temp_c;
     
     TRISB_RB6 = 0;		// Make RB6 output -- System LED 		
-  	
+   
+ 
     switch (smTcp) 
     {
-        case SM_TCP_SEND_ARP:
+#ifdef STACK_USE_DNS
+	 	case SM_HTTP_DNS_WAIT_RESOLVE:
+	    	if (DNSIsResolved( &host_addr))
+	    	{
+		    	tcpServerNode.IPAddr.v[0] = host_addr.v[0];
+		    	tcpServerNode.IPAddr.v[1] = host_addr.v[1];
+		    	tcpServerNode.IPAddr.v[2] = host_addr.v[2];
+		    	tcpServerNode.IPAddr.v[3] = host_addr.v[3];
+		       	smTcp = SM_HTTP_SEND_ARP;
+		     }
+		    break;
+#endif		    	
+
+        case SM_HTTP_SEND_ARP:
             if (ARPIsTxReady()) 
-	        {   // Clear MAC address first 
+            {	
+	           // Clear MAC address first 
                 tcpServerNode.MACAddr.v[0] = tcpServerNode.MACAddr.v[1]= tcpServerNode.MACAddr.v[2] = tcpServerNode.MACAddr.v[3] = 0;
 			    
 			    //Send ARP request for given IP address
                 ARPResolve(&tcpServerNode.IPAddr);
                 tsecMsgSent = TickGetSec(); 				// take snapshot of time
-                smTcp = SM_TCP_WAIT_ARP_RESOLVE;
+                smTcp = SM_HTTP_WAIT_ARP_RESOLVE;
             }
                         
             break;
 
-        case SM_TCP_WAIT_ARP_RESOLVE:
+        case SM_HTTP_WAIT_ARP_RESOLVE:
             if (ARPIsResolved(&tcpServerNode.IPAddr, &tcpServerNode.MACAddr)) 
 	        {
-				  // Start up via TCP_Finished so that all the reporting data gets initized 
-                  smTcp = SM_TCP_FINISHED;  
-                  tsecMsgSent -= WX_UPLINK_INTERVAL; 	// take snapshot of time and make so that State Finished executes immediatly
+					serPutRomString( (ROM char *) "\n\rReporting to IP address: ");
+					itoa(tcpServerNode.IPAddr.v[0],bu);serPutString(bu);serPutByte(':');
+					itoa(tcpServerNode.IPAddr.v[1],bu);serPutString(bu);serPutByte(':');
+					itoa(tcpServerNode.IPAddr.v[2],bu);serPutString(bu);serPutByte(':');
+					itoa(tcpServerNode.IPAddr.v[3],bu);serPutString(bu);
+					
+					// Start up via TCP_Finished so that all the reporting data gets initized 
+					smTcp = SM_HTTP_FINISHED;  
+					tsecMsgSent -= WX_UPLINK_INTERVAL; 	// take snapshot of time and make so that State Finished executes immediatly
             } 
             else
          	{
                	// if after 4 seconds ARP has not resolved, send request again
 	            if (TickGetSecDiff(tsecMsgSent) >= (TICK16)4)
 	            {
-	            	smTcp = SM_TCP_SEND_ARP;
+	            	smTcp = SM_HTTP_SEND_ARP;
 					LATB6 = 1; 		// indicate no connection via red LED  
 					// Note: upon first connect this always fails the first time around -- Not sure why ??
 	             }
@@ -225,7 +270,7 @@ TCP_ClientTask(void)
             
 	        break;    
 
-		case SM_TCP_CONNECT:
+		case SM_HTTP_CONNECT:
               // We can now connect as we have the remote server nodes MAC address
             tcpSocketUser = TCPConnect(&tcpServerNode,80);		// connect on HTTP port
 			tsecMsgSent = TickGetSec();
@@ -233,19 +278,21 @@ TCP_ClientTask(void)
                //An error occurred during the TCPListen() function
             if (tcpSocketUser == INVALID_SOCKET) 
             {    
-	            smTcp = SM_TCP_SEND_ARP;		// connection failed, go back to beginning of connection
+	            smTcp = SM_HTTP_SEND_ARP;		// connection failed, go back to beginning of connection
     			LATB6 = 1; 		// indicate no connection via red LED 
-            }
+    		}
             else
-            	smTcp = SM_TCP_WAIT_CONNECTED;
-           
+            {
+            	smTcp = SM_HTTP_WAIT_CONNECTED;
+            }
     		break;
             
-        case SM_TCP_WAIT_CONNECTED:
+        case SM_HTTP_WAIT_CONNECTED:
+        
             //Connection has been established
             if (TCPIsConnected(tcpSocketUser)) 
 	        {
-                 //Checks if there is a transmit buffer ready for accepting data, and that the given socket
+		         //Checks if there is a transmit buffer ready for accepting data, and that the given socket
                  //is valid (not equal to INVALID_SOCKET for example)
 				 if (TCPIsPutReady(tcpSocketUser)) 
 	             {
@@ -266,7 +313,7 @@ TCP_ClientTask(void)
 					put_WX_param(msgID,FALSE);
 					
 					bu[16] = 0;
-					strcpyee2ram(bu, APPCFG_WX_SATIONID, 16); 
+					strcpyee2ram(bu, APPCFG_WX_STATIONID, 16); 
 					i=0;
 					while ( b = bu[i++])
    						TCPPut(tcpSocketUser, b);
@@ -328,7 +375,6 @@ TCP_ClientTask(void)
 					// Send the solar radiation index in watts/ sq Meter ( estimated) 
 					put_WXparam_arg ( msgSolar, Solar_rad, NONE,TRUE);
 	
-				
 					
 				    // Must be HTTP 1.0 request for Wunderground to accept it
 					put_WX_param(msgHTTP,FALSE);
@@ -342,10 +388,11 @@ TCP_ClientTask(void)
                     b =  TCPFlush(tcpSocketUser);
                     tsecMsgSent = TickGetSec();     //Update with current time
   
-                   smTcp = SM_TCP_FINISHED;			// Go to wait for the next update cycle 
+                   smTcp = SM_HTTP_FINISHED;			// Go to wait for the next update cycle 
                 }  
                 else // not PUT ready
                 {
+	              
 	            }   
             }
             else 
@@ -353,18 +400,17 @@ TCP_ClientTask(void)
 		        // if there is no connection after 40 seconds go back and try to establish connection again
 		      if (TickGetSecDiff(tsecMsgSent) >= (TICK16)40)
               { 
-				   LATB6 = 1; // indicate no connection via red LED
+	               LATB6 = 1; // indicate no connection via red LED
 				   LATF0 = 1; // latch error in yellow led 
                    TCPDisconnect(tcpSocketUser);
-                   smTcp = SM_TCP_SEND_ARP;			// Try restarting  the connection 
-     	
-              }
+                   smTcp = SM_HTTP_SEND_ARP;			// Try restarting  the connection 
+     	       }
          	}   
             break;
 
 
 
-        case SM_TCP_FINISHED: 		// Finished sending a report, now waiting for the next interval 
+        case SM_HTTP_FINISHED: 		// Finished sending a report, now waiting for the next interval 
               if (TickGetSecDiff(tsecMsgSent) >= WX_UPLINK_INTERVAL)	// every 15 seconds send a new data package 
               { 
 // to immediatly affect the next reading by the cal factors changed       
@@ -507,13 +553,17 @@ TCP_ClientTask(void)
 	  				// V_out = VAdc = ADC_Count * Vref/1023
 	  				// Vref == Vsup == 5.0 ... Therefore
 	  				//	RH_uncomp = (ADC_Count/1023-0.16 )/0.0062 
+
 	  			
-	  				tmp =  (AdcValues[4]/1023.0 - 0.16)/0.0062;
+	  				tmp = 0.16 * (1.0 -Hyg_cal_offs * 0.002);				// Offset calibration +-24%
+	  				tmp = ( AdcValues[4] / 1023.0  - tmp ) / 0.0062; 
+	  				tmp = tmp * (1.0 + Hyg_cal * 0.002);						// Gain calibartion  +- 24%
+	  				
 	  				
 	  				// Compensation for temperature 
 	  				// RH = RH_uncomp / ( 1.0546 - 0.00216 * Temp_c)	
 	  				tmp = tmp /(1.0546 - 0.00216 * Temp_c);
-	  				tmp *= 1 + 0.001 *Hyg_cal;
+	  				
 	  				RH = tmp+0.5; 	// convert to integer in percent
 	  				RH_10 = (tmp+0.5)*10; // in 1/100 of a percent -- for better resolution of the webpage readout 
 	  				
@@ -524,6 +574,7 @@ TCP_ClientTask(void)
 	  				tmp = (100 - tmp)/5;
 	  				tmp = Temp_c - tmp;
 	  				T_dewptF  = (tmp*9/5+32)*10;		// convert to 1/10 deg F
+	  			
 	  				
 	 //Close approximation methode: 
 	 /*
@@ -543,7 +594,7 @@ TCP_ClientTask(void)
 	 Td = b * Y / (a - Y)
 	 */ 				
 	  							
-               		smTcp =SM_TCP_CONNECT; 	// reconnectd and send next set of parameters
+               		smTcp =SM_HTTP_CONNECT; 	// reconnectd and send next set of parameters
               }	  	 
            	 break;
            	 

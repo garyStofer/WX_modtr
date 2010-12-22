@@ -115,6 +115,7 @@ void DNSResolve(BYTE *Hostname)
 }
 
 
+
 /**
  * Call DNSIsResolved() until the host is resolved.
  * You cannot start two DNS resolution proceedures concurrently.
@@ -133,34 +134,37 @@ BOOL DNSIsResolved(IP_ADDR *HostIP)
     WORD_VAL            w;
     DNS_HEADER          DNSHeader;
     DNS_ANSWER_HEADER   DNSAnswerHeader;
-    IP_ADDR             tmpIpAddr;
+
 
     switch(smDNS)
     {
         case DNS_HOME:
-            tmpIpAddr.v[0] = MY_DNS_BYTE1;
-            tmpIpAddr.v[1] = MY_DNS_BYTE2;
-            tmpIpAddr.v[2] = MY_DNS_BYTE3;
-            tmpIpAddr.v[3] = MY_DNS_BYTE4;
-            ARPResolve(&tmpIpAddr);
-            StartTime = TickGet();
+			StartTime = TickGet();
+			Remote.MACAddr.v[0] = Remote.MACAddr.v[1]= Remote.MACAddr.v[2] = Remote.MACAddr.v[3] = 0;
+			Remote.IPAddr.v[0] = MY_DNS_BYTE1;
+			Remote.IPAddr.v[1] = MY_DNS_BYTE2;
+			Remote.IPAddr.v[2] = MY_DNS_BYTE3;
+			Remote.IPAddr.v[3] = MY_DNS_BYTE4;
+
+            ARPResolve(&Remote.IPAddr);
             smDNS++;
             break;
+        
         case DNS_RESOLVE_ARP:
-            if(!ARPIsResolved(&tmpIpAddr, &Remote.MACAddr))
+            if(!ARPIsResolved(&Remote.IPAddr, &Remote.MACAddr))
             {
-                if(TickGet() - StartTime > DNS_TIMEOUT)
-                {
-                    smDNS--;
-                }
+	            if(TickGet() - StartTime > DNS_TIMEOUT)
+	            {
+                        smDNS--;
+             	} 
                 break;
             }
-            Remote.IPAddr.Val = tmpIpAddr.Val;
-            smDNS++;
-            // No need to break, we can immediately start resolution
+            smDNS++;  // advance to DNS_OPEN_SOCKET
+            break;
+        
 
         case DNS_OPEN_SOCKET:
-            MySocket = UDPOpen(0, &Remote, DNS_PORT);
+              MySocket = UDPOpen(DNS_PORT, &Remote, DNS_PORT);
             if(MySocket == INVALID_UDP_SOCKET) {
                 #if (DEBUG_DNS >= LOG_ERROR)
                 debugPutMsg(1); //@mxd:1:Could not open UDP socket
@@ -170,7 +174,8 @@ BOOL DNSIsResolved(IP_ADDR *HostIP)
             }
 
             smDNS++;
-            // No need to break, we can immediately start resolution
+            break;
+            
             
         case DNS_QUERY:
             if(!UDPIsPutReady(MySocket))
@@ -184,7 +189,7 @@ BOOL DNSIsResolved(IP_ADDR *HostIP)
             UDPPut(0x00);        // 0x0001 questions
             UDPPut(0x01);
             UDPPut(0x00);        // 0x0000 answers
-            UDPPut(0x00);
+    		UDPPut(0x00);
             UDPPut(0x00);        // 0x0000 name server resource records
             UDPPut(0x00);
             UDPPut(0x00);        // 0x0000 additional records

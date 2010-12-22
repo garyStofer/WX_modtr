@@ -1126,11 +1126,11 @@ ROM BYTE eeConfigArray[] = {
     ' ',                                // Offset = 85
     0,                                  // Offset = 86
     
-    // Primary DNS server. First entry is MSB byte of IP address, for example in "192.168.1.0" it will be 192
-    MY_DEFAULT_DNS_BYTE1,               // Offset = 87
-    MY_DEFAULT_DNS_BYTE2,               // Offset = 88
-    MY_DEFAULT_DNS_BYTE3,               // Offset = 89
-    MY_DEFAULT_DNS_BYTE4,               // Offset = 90
+    // used to be DNS server address -- uses Gateway address for DNS now
+   0,               // Offset = 87
+   0,               // Offset = 88
+   0,               // Offset = 89
+   0,               // Offset = 90
     
     // UDP Command Port
     (BYTE)DEFAULT_CMD_UDPPORT,          // Offset = 91
@@ -1246,13 +1246,15 @@ ROM BYTE eeConfigArray[] = {
     102,			// Offset 146, Wunderground IP address byte 1
     136,			// offset 147, Wunderground IP address byte 2
     125,			// Offset 148, Wunderground IP address byte 3
-    'K','C','A','.','.','.',0,0,0,0,0,0,0,0,0,0, // Offset 149, Wunderground station ID,16bytes i.e. "KCACONCO18"
-    'p','w',0,0,0,0,0,0,0,0,0,0,0,0,0,0,	     // Offset 165, Wunderfround password String, 16bytes I.E. "weather"
+    'K','C','A','.','.','.',0,0,0,0,0,0,0,0,0,0, // Offset 149, Wunderground station ID,16bytes
+    'p','w',0,0,0,0,0,0,0,0,0,0,0,0,0,0,	     // Offset 165, Wunderfround password String, 16bytes 
     0,0,										 // Offset 181, Station altitude in feet, 2 bytes
     0x7f,											 // Temp_cal
     0x7f,											 // Baro_cal	
     0x7f,											 // Hyg_cal
-    0x7f											 // Sol_cal
+    0x7f,											 // Sol_cal
+    0x7f,											 // Baro_cal_offs	
+    0x7f											 // Hyg_cal_offs
  };
 
 //Fill up remaining space so that eeBusConfigArray starts at EEPROM address 256

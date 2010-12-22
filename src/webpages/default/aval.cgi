@@ -1,8 +1,8 @@
-<html>
+﻿<html>
 <head>
-<meta http-equiv="refresh" content="5">
-<meta http-equiv="Pragma" content="no-cache">
-<link href="mx.css" rel="stylesheet" type="text/css">
+<meta http-equiv="refresh" content="5"/>
+<meta http-equiv="Pragma" content="no-cache"/>
+<link href="mx.css" rel="stylesheet" type="text/css"/>
 <script src="lib01.js"></script>
 </head>
 
@@ -26,12 +26,12 @@ be configured on the <a href="xacfg.cgi">Analog Input Settings</a> page.</td></t
 <tr><td class=bLbl>A5</td><td class=bCtr>%n24V</td> <td class=bLbl>F5</td><td class=bCtr>%n2AV</td> </tr>
 <tr><td class=bLbl>F0</td><td class=bCtr>%n25V</td> <td class=bLbl>F6</td><td class=bCtr>%n2BV</td> </tr>
 
-<tr><td class=bBot colspan=6><input type=submit value="Update"></td></tr>
+<tr><td class=bBot colspan=6><input type=submit value="Update"/></td></tr>
 
 </table>
 </form>
 
-<hr>
+<hr/>
 The HTML document will have a %%nxy tag where it wants to display a ADC channel value. The 'x' part represents the
  format of the displayed channel, and the 'y' part the channel. Valid formats are:
 <ul><li>0 - Outputs the channels value in hex, for example <b>FA</b></li>

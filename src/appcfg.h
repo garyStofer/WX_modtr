@@ -475,15 +475,16 @@ enum APP_CONFIG_ENUM {
     APPCFG_WX_IP_ADDR1,			// Offset 146, Wunderground IP address byte 1
     APPCFG_WX_IP_ADDR2,			// offset 147, Wunderground IP address byte 2
     APPCFG_WX_IP_ADDR3,			// Offset 148, Wunderground IP address byte 3
-    APPCFG_WX_SATIONID,			// Offset 149, Wunderground station ID, max 15+1 bytes
+    APPCFG_WX_STATIONID,		// Offset 149, Wunderground station ID, max 15+1 bytes
     APPCFG_WX_PASSWD = 165 ,	// offset 165, Wunderfround password String, max 15+1 bytes
     APPCFG_WX_STATION_ELEVL=181, // Offset 181, Station altitude in feet, 2 bytes
   	APPCFG_WX_STATION_ELEVH,	 // Offset 182, 0xB6 
   	APPCFG_WX_STATION_TEMP_CAL,	// Offset  183,0xB7, Temperature calibrartion factor
   	APPCFG_WX_STATION_BARO_CAL,	// Offset  184,0xB8, Barometer calibrartion factor
   	APPCFG_WX_STATION_HYG_CAL,	// Offset  185,0xB9, Hygrometer calibrartion factor
-  	APPCFG_WX_STATION_SOL_CAL	// Offset  186,0xBA, Solar calibrartion factor
-    
+  	APPCFG_WX_STATION_SOL_CAL,	// Offset  186,0xBA, Solar calibrartion factor
+    APPCFG_WX_STATION_BARO_CAL_OFFS,// Offset  187,0xB9, Hygrometer calibrartion factor
+    APPCFG_WX_STATION_HYG_CAL_OFFS	// Offset  189,0xB9, Hygrometer calibrartion factor
     
 };
 

@@ -154,30 +154,33 @@ cmdGetWordVar2(BYTE ref, BYTE* val, WORD w, BYTE dec_places)
     {
         memset( strTmp,0,STRTMP_MAXSIZE);
 		itoa(w,strTmp);
-			
-		if ( w == 0 && dec_places )
+		
+		i = strlen(strTmp);
+		
+		if (dec_places ==1 )
 		{
-			strTmp[1]='.';
-			strTmp[2]='0';	
-		}
-		else
-		{
-			i = strlen(strTmp);
-			
-			if (dec_places ==1)
+			if (i >1 )
 			{
 				strTmp[i] = strTmp[i-1];
 				strTmp[i-1] = '.';
 			}
-			
-			if (dec_places ==2)
+			else
 			{
-				strTmp[i] = strTmp[i-1];
-				strTmp[i-1] = strTmp[i-2];
-				strTmp[i-2]='.';
-			}
+				strTmp[2] = strTmp[0];
+				strTmp[1] = '.';
+				strTmp[0] = '0';
+					
+			}	
 		}
-    }
+		
+		if (dec_places ==2)
+		{
+			strTmp[i] = strTmp[i-1];
+			strTmp[i-1] = strTmp[i-2];
+			strTmp[i-2]='.';
+		}
+	}
+    
     *val = strTmp[(BYTE)ref];
     if ( strTmp[(BYTE)ref] == '\0' )
         return HTTP_END_OF_VAR;
@@ -955,7 +958,7 @@ WORD execNameValueCmd(BYTE * name, BYTE * value, BYTE user) {
 	    switch(name[1]) 
 	    {
 	    	case CMDCODE_WX_ID:
-	    		strcpyram2ee(APPCFG_WX_SATIONID, (char *)value, 15);
+	    		strcpyram2ee(APPCFG_WX_STATIONID, (char *)value, 15);
 	    		break;
 	    
 	    	case CMDCODE_WX_PW:
@@ -1552,7 +1555,7 @@ WORD cmdGetTag(GETTAG_INFO* pGetTagInfo)
             return 1;   //One byte was written
         }
         else if ( tagVal == VARVAL_GEN_WX_STATION_ID) {
-            pGetTagInfo->ref = cmdGetEepromStringVar(ref, pGetTagInfo->val, APPCFG_WX_SATIONID);
+            pGetTagInfo->ref = cmdGetEepromStringVar(ref, pGetTagInfo->val, APPCFG_WX_STATIONID);
             return 1;   //One byte was written
         }   
         else if ( tagVal == VARVAL_GEN_WX_STATION_PWD) {
@@ -1605,16 +1608,17 @@ WORD cmdGetTag(GETTAG_INFO* pGetTagInfo)
            	 pGetTagInfo->ref = cmdGetWordVar2(ref, pGetTagInfo->val,Baro_Inch, 2) ;
            	 return 1;
         }
-        else if (tagVal == VARVAL_GEN_WX_RH )
-        {
-           	 pGetTagInfo->ref = cmdGetWordVar2(ref, pGetTagInfo->val,RH_10, 1) ;
-           	 return 1;
-        }
         else if (tagVal == VARVAL_GEN_WX_DWPT )
         {
            	 pGetTagInfo->ref = cmdGetWordVar2(ref, pGetTagInfo->val,T_dewptF, 1) ;
            	 return 1;
         }
+        else if (tagVal == VARVAL_GEN_WX_RH )
+        {
+           	 pGetTagInfo->ref = cmdGetWordVar2(ref, pGetTagInfo->val,RH_10, 1) ;
+           	 return 1;
+        }
+      
     }
     /////////////////////////////////////////////////
     

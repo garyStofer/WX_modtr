@@ -63,7 +63,7 @@ static BOOL DownloadFsysImage(void);
 /////////////////////////////////////////////////
 //ROM Defines
 ROM char PressKeyForConfig[] = "\r\nPress any key for Configuration menu.";
-ROM char RunningApp[] = "\r\nRunning Application, IP address: ";
+ROM char RunningApp[] = "\r\nRunning Application, My IP address: ";
 
 #if defined(STACK_USE_DHCP) || defined(STACK_USE_IP_GLEANING)
 ROM char DHCPMsg[] = "DHCP/Gleaning...";

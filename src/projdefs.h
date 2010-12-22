@@ -571,9 +571,9 @@ extern void fastUserProcess(void);
     #define DEBUG_ANNOUNCE  LOG_OFF
     #define DEBUG_APPCFG    LOG_OFF
     #define DEBUG_BUS       LOG_OFF
-    #define DEBUG_CMD       LOG_DEBUG
+    #define DEBUG_CMD       LOG_OFF
     #define DEBUG_DHCP      LOG_OFF
-    #define DEBUG_DNS       LOG_OFF
+    #define DEBUG_DNS       LOG_DEBUG
     #define DEBUG_FTP       LOG_OFF
     #define DEBUG_FSEE      LOG_OFF
     #define DEBUG_GEN       LOG_OFF
@@ -587,7 +587,7 @@ extern void fastUserProcess(void);
     #define DEBUG_TCP       LOG_OFF
     #define DEBUG_TCPUTILS  LOG_OFF
     #define DEBUG_TFTPC     LOG_OFF
-    #define DEBUG_UDP       LOG_OFF
+    #define DEBUG_UDP       LOG_DEBUG
     #define DEBUG_UDPUTILS  LOG_OFF
 
 #endif
@@ -749,7 +749,7 @@ extern WORD AdcValues[ADC_CHANNELS];
  * @code #define STACK_USE_DNS @endcode
  * Uncomment if stack should implement DNS
  */
-#define STACK_USE_DNS		
+//#define STACK_USE_DNS		
 
 /*
  * When SLIP is used, DHCP is not supported.
@@ -923,24 +923,6 @@ extern WORD AdcValues[ADC_CHANNELS];
     #define MY_DEFAULT_MAC_BYTE6        (0x00ul)
 #endif
 
-
-
-/** @addtogroup mod_conf_projdefs
- * @code
- * #define MY_DEFAULT_DNS_BYTE1 (n)
- * #define MY_DEFAULT_DNS_BYTE2 (n)
- * #define MY_DEFAULT_DNS_BYTE3 (n)
- * #define MY_DEFAULT_DNS_BYTE4 (n)
- * @endcode
- * Use these defines to define the default Primary DNS server IP address.
- */
-#define MY_DEFAULT_DNS_BYTE1        MY_DEFAULT_GATE_BYTE1
-#define MY_DEFAULT_DNS_BYTE2        MY_DEFAULT_GATE_BYTE2
-#define MY_DEFAULT_DNS_BYTE3        MY_DEFAULT_GATE_BYTE3
-#define MY_DEFAULT_DNS_BYTE4        MY_DEFAULT_GATE_BYTE4
-
-
-
 /*
  * Mac address for this node - is contained in AppConfig structure
  */
@@ -979,15 +961,11 @@ extern WORD AdcValues[ADC_CHANNELS];
 /*
  * Primary DNS address for this node
  */
-#define MY_DNS_BYTE1                    appcfgGetc(APPCFG_DNS_IP0)
-#define MY_DNS_BYTE2                    appcfgGetc(APPCFG_DNS_IP1)
-#define MY_DNS_BYTE3                    appcfgGetc(APPCFG_DNS_IP2)
-#define MY_DNS_BYTE4                    appcfgGetc(APPCFG_DNS_IP3)
+#define MY_DNS_BYTE1                    MY_GATE_BYTE1
+#define MY_DNS_BYTE2                    MY_GATE_BYTE2
+#define MY_DNS_BYTE3                    MY_GATE_BYTE3
+#define MY_DNS_BYTE4                    MY_GATE_BYTE4
 
-#define MY_DNS_BYTE1_SET(n)             appcfgPutc(APPCFG_DNS_IP0, n)
-#define MY_DNS_BYTE2_SET(n)             appcfgPutc(APPCFG_DNS_IP1, n)
-#define MY_DNS_BYTE3_SET(n)             appcfgPutc(APPCFG_DNS_IP2, n)
-#define MY_DNS_BYTE4_SET(n)             appcfgPutc(APPCFG_DNS_IP3, n)
 
 
 /** @addtogroup mod_conf_projdefs

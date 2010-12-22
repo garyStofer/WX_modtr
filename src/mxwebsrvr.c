@@ -268,11 +268,8 @@ void main(void)
 {
     static TICK8 t = 0;
 
-    static BYTE testLED;
-    testLED = 1;
-
     //Set SWDTEN bit, this will enable the watch dog timer
-    WDTCON_SWDTEN = 1;
+//    WDTCON_SWDTEN = 1;
     aliveCntrMain = 0xff;   //Disable alive counter during initialization. Setting to 0xff disables it.
 
     //Initialize any application specific hardware.
@@ -350,7 +347,7 @@ void main(void)
         debugPutMsg(1); //@mxd:1:Starting main loop
     #endif
 
- 	TCP_ClientInit(); 
+ 	HTTP_ClientInit(); 
 
     /*
      * Once all items are initialized, go into infinite loop and let
@@ -439,7 +436,7 @@ void main(void)
        
 
 		// Used for connection to weather station upload (i.e. Wundergrounc.com)
-		TCP_ClientTask();
+		HTTP_Client();
 	
         //For DHCP information, display how many times we have renewed the IP
         //configuration since last reset.

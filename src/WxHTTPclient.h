@@ -15,11 +15,11 @@
 /////////////////////////////////////////////////
 //Global defines
 
-extern void TCP_ClientTask(void);
-extern void TCP_ClientInit( void );
+extern void HTTP_Client(void);
+extern void HTTP_ClientInit( void );
 
-#define WX_UPLINK_INTERVAL  15   				// in seconds 
-#define AGV_INTERVAL		60					// e.g.  40= 60sec/15sec * 10min
+#define WX_UPLINK_INTERVAL  15   				// in seconds .. Windgust is taken within this periode
+#define AGV_INTERVAL		50					// e.g.  50=  50*15sec/60sec = 12.5min
 
 extern BYTE Wind_counts[]; 			// updated by ISR every second  
 extern unsigned short Wind_spd;		// in 1/10 Statute Mile  
