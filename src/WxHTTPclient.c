@@ -70,17 +70,22 @@ unsigned short Wind_spd=0;		// in 1/10 Statute Mile
 unsigned short Wind_gst=0;		// in 1/10 Statute Mile 
 unsigned short Wind_dir=0;		// in degree 0-359
 unsigned short Solar_rad;		// estimate of watts per sq meter 
-unsigned short Baro_Inch=2992;       // in 1/100 of an inch 
-unsigned short RH=0;		 		// in Relative Humidity in percent
+unsigned short Baro_Inch=2992;  // in 1/100 of an inch 
+unsigned short RH=0;		 	// in Relative Humidity in percent
 unsigned short RH_10=0;		 	// in Relative Humidity in 1/10 of percent
-unsigned short Temp_F =0;			// in 1/10 of deg F
+unsigned short Temp_F =0;		// in 1/10 of deg F
 unsigned short T_dewptF=0;		// in 1/10 of deg F
 
 static BYTE baro_avg_smpl =0;
 static BYTE baro_avg_ndx = 0;
-static float Baro_Avg[AGV_INTERVAL]= {0};
+static float Baro_Avg[AGV_INTERVAL]={0};
+#define TEMP_AVG_SMPL 16
+static float Temp_Avg[TEMP_AVG_SMPL];
+static float RH_Avg[TEMP_AVG_SMPL];
+static BYTE tempRH_avg_ndx = 0;
+static BYTE tempRH_avg =0;
 static WORD Station_elev;
-static signed char Temp_cal,Baro_cal,Hyg_cal,Sol_cal, Hyg_cal_offs;
+static signed char Temp_cal,Baro_cal,Hyg_cal,Sol_cal, Hyg_cal_offs,Wind_cal;
 
 #ifdef STACK_USE_DNS
 IP_ADDR host_addr;
@@ -115,6 +120,7 @@ HTTP_ClientInit( void )
 	Hyg_cal = appcfgGetc(APPCFG_WX_STATION_HYG_CAL)-127;
 	Sol_cal = appcfgGetc(APPCFG_WX_STATION_SOL_CAL)-127;
 	Hyg_cal_offs = appcfgGetc(APPCFG_WX_STATION_HYG_CAL_OFFS)-127;
+	Wind_cal = appcfgGetc(APPCFG_WX_STATION_WIND_DIR_CAL)-127;
 
 // Setup DNS with URL
 // Currently not done since it uses a fair amount of RAM & Prog_rom and EEProm space to hold everything related to the URL and DNS code 
@@ -210,6 +216,7 @@ HTTP_Client(void)
     BYTE b;
     WORD i;
     float tmp;
+    float Y;
     float Temp_c;
     
     TRISB_RB6 = 0;		// Make RB6 output -- System LED 		
@@ -418,25 +425,10 @@ HTTP_Client(void)
 //Baro_cal = appcfgGetc(APPCFG_WX_STATION_BARO_CAL)-128;
 //Hyg_cal = appcfgGetc(APPCFG_WX_STATION_HYG_CAL)-128;
 //Sol_cal = appcfgGetc(APPCFG_WX_STATION_SOL_CAL)-128;
-		           // LM134/234 is a current source with a temp coefficient of ~214uV/°K
-		           // The current, Iset  is calculated according to (see page5 of data sheet)
-		           // Iset = 227.3983e-6 * T°K / R_set (typical) 
-		           // °K = Iset*R_set/227.39;
-		           // Iset = V_Rload / R_load;
-		           // V_Rload = Adc * Vref / 1023 (Vref= 5.0) == ADC * 4.8875e-3
-		           // with R_set and R_load at 152O and 9Ko resp, V_Load = 13.4643mv per °K
-		           // with Vref at 5V and 10 bit ADC  T°K = ADC * ( 5/1023/13.4643)  == 0.363
 
-           	               	              	 
-	                // Get the Temp reading from the external LM334 sensor 
-					tmp =  AdcValues[0] * 0.36300; 		// Calculate  °K
-					tmp *= 1 + 0.0001 * Temp_cal; 		// apply gain adjustment 
-					Temp_c = tmp - 273.15;			 	// Convert to °C
-					tmp = Temp_c*9/5;				 	// Convert to °F
-					tmp += 32;
-					Temp_F = tmp*10;
+
 					
-         
+     // The Wind:    
 	              	// Davis Cup anemometer conversion to MPH is 2.25 x revolution/sec 
 	              	// The wind speed data is aquired as follows:
 	              	// The ISR captures counter/Timer3 Low byte once per second and stores the reading
@@ -503,7 +495,8 @@ HTTP_Client(void)
               	  	 	Wind_dir = 360;
               	  	 else if (Wind_dir < 0 ) 
               	  	 	Wind_dir = 0;
-   	  	 	
+              	  	 Wind_dir = (Wind_dir+Wind_cal)%360;	
+   	  // The Barometer:	 	
               	  	 	
               	  	 // device sensitiviti is 45mv/kpa, device has 0.2V offset at 15kpa, full range (115kpa) at 0.2v +4.5V = 4.7V
               	  	 // Kpa =  ( (Vout -0.2V) / 0.045v ) + 15kpa
@@ -539,7 +532,7 @@ HTTP_Client(void)
 					
 					Baro_Inch = tmp* 29.53;
 					
-					
+// The Solar Radiation:					
 					// estimation of solar radiation: Not scientific, not linear, just a guesstimate 
 					tmp = AdcValues[3]* 2.8; // estimated watts per Sq Meter, based on max Vout ~1.7V loaded  and roughly 1KW per sq meter max radiation 
 	  				tmp *= 1.0 + 0.007 * Sol_cal;
@@ -547,7 +540,33 @@ HTTP_Client(void)
 	  				if ( Solar_rad < 10 ) 
 	  					Solar_rad =0;
 	  					
-	  					
+// The Temperature:
+		           // LM134/234 is a current source with a temp coefficient of ~214uV/°K
+		           // The current, Iset  is calculated according to (see page5 of data sheet)
+		           // Iset = 227.3983e-6 * T°K / R_set (typical) 
+		           // °K = Iset*R_set/227.39;
+		           // Iset = V_Rload / R_load;
+		           // V_Rload = Adc * Vref / 1023 (Vref= 5.0) == ADC * 4.8875e-3
+		           // with R_set and R_load at 152O and 9Ko resp, V_Load = 13.4643mv per °K
+		           // with Vref at 5V and 10 bit ADC  T°K = ADC * ( 5/1023/13.4643)  == 0.363
+
+           	               	              	 
+	                // Get the Temp reading from the external LM334 sensor 
+					tmp =  AdcValues[0] * 0.36300; 		// Calculate  °K
+					tmp *= 1 + 0.0001 * Temp_cal; 		// apply gain adjustment 
+					Temp_c = tmp - 273.15;			 	// Convert to °C
+// averaging 					
+					Temp_Avg[tempRH_avg_ndx] = Temp_c;
+					
+					if (tempRH_avg )						// extract average from running average array if we have a full array 
+					{
+						for ( tmp =0.0,i=0; i < TEMP_AVG_SMPL; i++ )
+							tmp += Temp_Avg[i];
+						
+						Temp_c = tmp/TEMP_AVG_SMPL;
+					}
+									
+// The Humidity:	  					
 	  				// Relavive humidity -- Sensor HIH 4030	
 	  				// formual:   RH_uncomp = (Vout/Vsup - 0.16 ) / 0.0062
 	  				// V_out = VAdc = ADC_Count * Vref/1023
@@ -564,17 +583,39 @@ HTTP_Client(void)
 	  				// RH = RH_uncomp / ( 1.0546 - 0.00216 * Temp_c)	
 	  				tmp = tmp /(1.0546 - 0.00216 * Temp_c);
 	  				
-	  				RH = tmp+0.5; 	// convert to integer in percent
-	  				RH_10 = (tmp+0.5)*10; // in 1/100 of a percent -- for better resolution of the webpage readout 
+// Averaging of RH	  				
+	  				RH_Avg[tempRH_avg_ndx] = tmp;
 	  				
+	  				if (++tempRH_avg_ndx >=TEMP_AVG_SMPL )	// array filled, wrap around  and start taking average 
+	  				{
+		  					tempRH_avg_ndx = 0;
+							tempRH_avg = 1;
+					}
+	  				
+	  				if (tempRH_avg )						
+					{
+						for ( tmp =0.0,i=0; i < TEMP_AVG_SMPL; i++ )
+							tmp += RH_Avg[i];
+						
+						tmp = tmp/TEMP_AVG_SMPL;
+					}
+	  				
+	  				RH_10 = 10*(tmp+0.5); 	// convert to integer in 1/10 of a percent -- for better resolution of the webpage readout 
+	  				if (RH_10>1000)			// if uncalibrated limit to 100%  
+	  					RH= 1000;
+	  					
+	  				RH= RH_10/10;
+// The Dewpoint: 	  
+	// tmp holds RH as float 
+					
 	  				// Calculate DewPoint from Temp and humidity
 	  				// simple approximation formula:
 	  				// Td = Temp_c -(100-RH)/5
-	  				
+	/*  				
 	  				tmp = (100 - tmp)/5;
 	  				tmp = Temp_c - tmp;
 	  				T_dewptF  = (tmp*9/5+32)*10;		// convert to 1/10 deg F
-	  			
+	  */			
 	  				
 	 //Close approximation methode: 
 	 /*
@@ -592,8 +633,12 @@ HTTP_Client(void)
 	 RH = Relative Humidity
 	 Y = (a*Tc /(b+Tc)) + ln(RH/100)  
 	 Td = b * Y / (a - Y)
-	 */ 				
-	  							
+	 */ 	
+	  Y = ((17.271 * Temp_c) / (237.7+Temp_c ))+ log(tmp/100);
+	  tmp = 237.7 * Y/(17.271-Y);
+	  
+	  	  			T_dewptF  = (tmp*9/5+32)*10;		// convert to 1/10 deg F
+	 				Temp_F =((Temp_c*9/5)+32)*10; // Convert to °F
                		smTcp =SM_HTTP_CONNECT; 	// reconnectd and send next set of parameters
               }	  	 
            	 break;

@@ -483,9 +483,10 @@ enum APP_CONFIG_ENUM {
   	APPCFG_WX_STATION_BARO_CAL,	// Offset  184,0xB8, Barometer calibrartion factor
   	APPCFG_WX_STATION_HYG_CAL,	// Offset  185,0xB9, Hygrometer calibrartion factor
   	APPCFG_WX_STATION_SOL_CAL,	// Offset  186,0xBA, Solar calibrartion factor
-    APPCFG_WX_STATION_BARO_CAL_OFFS,// Offset  187,0xB9, Hygrometer calibrartion factor
-    APPCFG_WX_STATION_HYG_CAL_OFFS	// Offset  189,0xB9, Hygrometer calibrartion factor
-    
+    APPCFG_WX_STATION_BARO_CAL_OFFS,// Offset  187,0xBB, Barometer calibrartion  offset
+    APPCFG_WX_STATION_HYG_CAL_OFFS,	// Offset  189,0xBC, Hygrometer calibrartion offset
+    APPCFG_WX_STATION_WIND_DIR_CAL  // Offset  190, 0xBD, direction calibration 
+     
 };
 
 

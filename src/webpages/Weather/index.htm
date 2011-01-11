@@ -1,0 +1,60 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Frameset//EN"
+ "http://www.w3.org/TR/html4/frameset.dtd">
+<html>
+<head>
+<title>Internet Weather Station</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<meta http-equiv="Pragma" content="no-cache">
+<style type="text/css">
+.top {border-bottom:2px double #0000FF; background-color:#ffdd00; text-align:center; height:20px; padding:3px;}
+.left {border-right:2px solid #0000FF; background-color:#F0F0F0; padding:0px; vertical-align:top;}
+.menuBtn {
+	padding-left:7px;
+	padding-right:7px;
+	border-top:2px solid #FFFFFF;
+	border-right:2px solid #CCCCCC;
+	border-bottom:2px solid #CCCCCC;
+	border-left:2px solid #FFFFFF;
+	white-space:nowrap;
+	font-size:14px;
+}
+A {color:#000000; text-decoration:none;}
+body {height:100%; margin:0; padding:0; font-family:Verdana,Arial,sans-serif;}
+html {height:100%; overflow-y:hidden;}
+</style>
+</head>
+
+
+<body>
+<table id=mainTable height="100%" width="100%" cellpadding=0 cellspacing=0>
+	<!-- Top -->
+	<tr><td class=top colspan=2>
+		Weather Station</td></tr>
+
+	<tr>
+	<!-- Left -->
+	<td class=left>
+		<table cellpadding=0 cellspacing=0>
+	<!--		<tr><td class=menuBtn><a href="status.cgi" target=main>Station Status</a></td></tr>-->
+			<tr><td class=menuBtn style="height: 21px"><a href="compas.svg" target=main>Local Status</a></td></tr>
+			<tr><td class=menuBtn><a href="wunder.cgi"target=main>Wunderground</a></td></tr>
+			<tr><td class=menuBtn><a href="exp.cgi" target=main>Expansion Board</a></td></tr>
+			<tr><td class=menuBtn style="height: 18px"><a href="xcfg.htm">Configure</a></td></tr>
+			<!--
+			<tr><td class=menuBtn style="height: 21px"><a href="rtc.cgi"target=main>Set Clock</a></td></tr>
+			<tr><td class=menuBtn><a href="senscal.cgi"target=main>Sensor Cal</a>ibration</td></tr>
+			<tr><td class=menuBtn><a href="xncfg.cgi" target=main>Network Settings</a></td></tr>  
+			<tr><td class=menuBtn><a href="xwcfg.cgi" target=main>Web Server Settings</a></td></tr>
+			<tr><td class=menuBtn><a href="xbscfg.cgi" target=main>RS232 Settings</a></td></tr>
+			-->
+		</table>
+	</td>
+
+	<td width="100%" height="100%" valign=top>
+		<iframe width="100%" height="100%" name=main src="compas.svg" scrolling="auto" frameborder=0></iframe>
+	</td>
+	</tr>
+</table>
+
+</body>
+</html>

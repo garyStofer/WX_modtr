@@ -114,12 +114,14 @@
 #define HTTP_FILETYPE_JPG        (7ul)
 #define HTTP_FILETYPE_JAR        (8ul)
 #define HTTP_FILETYPE_WAV        (9ul)
-#define HTTP_FILETYPE_UNKNOWN    (10ul)
-#define HTTP_FILETYPE_ZTX        (11ul) //Zipped (Gzip) Text file
-#define HTTP_FILETYPE_ZHT        (12ul) //Zipped (Gzip) HTML file
-#define HTTP_FILETYPE_ZCL        (13ul) //Zipped (Gzip) Java class file
-#define HTTP_FILETYPE_ZCS        (14ul) //Zipped (Gzip) CSS file
-#define HTTP_FILETYPE_ZJS        (15ul) //Zipped (Gzip) JavaScript file
+#define HTTP_FILETYPE_SVG 		 (10ul) // Scaled Vector Graphics file 
+#define HTTP_FILETYPE_UNKNOWN    (11ul)
+#define HTTP_FILETYPE_ZTX        (12ul) //Zipped (Gzip) Text file
+#define HTTP_FILETYPE_ZHT        (13ul) //Zipped (Gzip) HTML file
+#define HTTP_FILETYPE_ZCL        (14ul) //Zipped (Gzip) Java class file
+#define HTTP_FILETYPE_ZCS        (15ul) //Zipped (Gzip) CSS file
+#define HTTP_FILETYPE_ZJS        (16ul) //Zipped (Gzip) JavaScript file
+
 
 //Test if the given type is one of the zippable file types supported by the HTTP server
 #define isZippableFiletype(type) (type <= HTTP_FILETYPE_JS)
@@ -156,12 +158,14 @@ static ROM FILE_TYPES httpFiles[] =
     { "JPG" },          // HTTP_FILETYPE_JPG
     { "JAR" },          // HTTP_FILETYPE_JAR
     { "WAV" },          // HTTP_FILETYPE_WAV
+    { "SVG" },		    // HTTP_FILETYPE_SVG
     { "TXT" },          // HTTP_FILETYPE_UNKNOWN
     { "ZTX" },          // HTTP_FILETYPE_ZTX
     { "ZHT" },          // HTTP_FILETYPE_ZHT
     { "ZCL" },          // HTTP_FILETYPE_ZCL
     { "ZCS" },          // HTTP_FILETYPE_ZCS
     { "ZJS" }           // HTTP_FILETYPE_ZJS
+
 };
 #define TOTAL_FILE_TYPES        ( sizeof(httpFiles)/sizeof(httpFiles[0]) )
 
@@ -180,12 +184,14 @@ static ROM char * httpContents[] = {
     "image/jpeg",               /* HTTP_FILETYPE_JPG */
     "application/java-archive", /* HTTP_FILETYPE_JAR */
     "audio/x-wave",             /* HTTP_FILETYPE_WAV */
+    "image/svg+xml",     		 // HTTP_FILETYPE_SVG
     "text/plain",               /* HTTP_FILETYPE_UNKNOWN */
     "text/plain",               /* HTTP_FILETYPE_ZTX */
     "text/html",                /* HTTP_FILETYPE_ZHT */
     "application/java-vm",      /* HTTP_FILETYPE_ZCS */
     "text/css",                 /* HTTP_FILETYPE_ZCS */
     "text/javascript"           /* HTTP_FILETYPE_ZJS */
+
 };
 
 
@@ -537,7 +543,8 @@ static void HTTPProcess(HTTP_HANDLE h)
                 
                 //Check if the current file type is a dynamic file, and if it is, set bit so it will
                 //be parsed. All %nnn tags in a dynamic file are replaced by CGI server.
-                if ( (ph->var.get.fileType == HTTP_FILETYPE_CGI)
+                if (    (ph->var.get.fileType == HTTP_FILETYPE_CGI)
+                	||  (ph->var.get.fileType == HTTP_FILETYPE_SVG)
                     || ((ph->var.get.fileType == HTTP_FILETYPE_HTML) && HTTP_PARSE_FILETYPE_HTML)
                     || ((ph->var.get.fileType == HTTP_FILETYPE_JS) && HTTP_PARSE_FILETYPE_JS) )
                 {

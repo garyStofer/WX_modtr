@@ -371,7 +371,7 @@ extern void fastUserProcess(void);
 
  //Keep a count of CNTR1 - CNTR3 registers. This can be used for debug purposes, and can be disabled for
  //release code.
-#define MAC_CNTR1_3
+//#define MAC_CNTR1_3
 
  //Use access RAM variables to optiomize speed and code size. There are only a limited amount of access RAM
  //registers in the PIC processor. If they are not used by any other code modules, this define should be enabled
@@ -429,7 +429,7 @@ extern void fastUserProcess(void);
 /*******************************************************
 ----------------- TCP Configuration --------------------
 ********************************************************/
-//Maximum number of times a connection be retried before closing it down.
+//Maximum number of times a connection be retried before closing it down. --3 is default
 #define TCP_MAX_RETRY_COUNTS    (3ul)
 
 //TCP Timeout value to begin with.

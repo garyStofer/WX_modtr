@@ -29,32 +29,31 @@ html {height:100%; overflow-y:hidden;}
 <table id=mainTable height="100%" width="100%" cellpadding=0 cellspacing=0>
 	<!-- Top -->
 	<tr><td class=top colspan=2>
-		SBC65EC/SBC68 Main Menu</td></tr>
+		Weather Station Configuration
+	</td></tr>
 
 	<tr>
 	<!-- Left -->
-	<td class=left>
-		<table cellpadding=0 cellspacing=0>
-			<tr><td class=menuBtn><a href="intro.htm" target=main>Introduction</a></td></tr>
-			<tr><td class=menuBtn><a href="aval.cgi" target=main>Analog Inputs</a></td></tr>  
-			<tr><td class=menuBtn><a href="ioval.cgi" target=main>Port Values</a></td></tr>
-			<tr><td class=menuBtn><a href="lcd2s.htm" target=main>LCD Display</a></td></tr>
-			<tr><td class=menuBtn><a href="pwmval.cgi" target=main>PWM Values</a></td></tr>
-			<tr><td class=menuBtn><a href="exp.cgi" target=main>Expansion Board</a></td></tr>
-			<tr><td class=menuBtn><a href="exp1.cgi" target=main>Example 1</a></td></tr>
-			<tr><td class=menuBtn><a href="xcfg.htm">System Configuration</a></td></tr>
-			<tr><td class=menuBtn><a href="cmd.htm" target="main">List of GET commands</a></td></tr>
-			<tr><td class=menuBtn><a href="tag.htm" target="main">List of Special Tags</a></td></tr>
-			<tr><td class=menuBtn><a href="wx.cgi"target=main>WX Station</a></td></tr>
-			<tr><td class=menuBtn><a href="senscal.cgi"target=main>Sensor Cal</a></td></tr>
-		</table>
-	</td>
+	<td class=left><table cellpadding=0 cellspacing=0>
+		<tr><td class=menuBtn><a href="index.htm"><b>Home</b></a></td></tr>
+		<tr><td class=menuBtn><a href="xscfg.cgi" target=xcfg>System Settings</a></td></tr>  
+		<tr><td class=menuBtn><a href="xncfg.cgi" target=xcfg>Network Settings</a></td></tr>  
+		<tr><td class=menuBtn><a href="xwcfg.cgi" target=xcfg>Web Server Settings</a></td></tr>
+		<tr><td class=menuBtn><a href="wx.cgi"target=xcfg>WX Station Settings</a></td></tr>
+		<tr><td class=menuBtn><a href="xiocfg.cgi" target=xcfg>Port Settings</a></td></tr>
+		<tr><td class=menuBtn><a href="xacfg.cgi" target=xcfg>ADC Settings</a></td></tr>    
+		<tr><td class=menuBtn><a href="xbscfg.cgi" target=xcfg>RS232 Settings</a></td></tr>
+		<tr><td class=menuBtn><a href="senscal.cgi"target=xcfg>Sensor Calibration</a></td></tr>
+		<tr><td class=menuBtn><a href="rtc.cgi"target=xcfg>Set Clock</a></td></tr>
+		<tr><td class=menuBtn><a href="xuser.cgi" target=xcfg>User Name & PW</a></td></tr> 
+
+	</table></td>
 
 	<!-- Main -->
 	<!-- Option 1: Make height of td below 2000, and remove "overflow-y: hidden;" from html style -->
 	<!-- Option 2: Make height of td below "100%", and add "overflow-y: hidden;" to html style -->
 	<td width="100%" height="100%" valign=top>
-		<iframe width="100%" height="100%" name=main src="status.cgi" scrolling="auto" frameborder=0></iframe>
+		<iframe width="100%" height="100%" name=xcfg src="status.cgi" scrolling="auto" frameborder=0></iframe>
 	</td>
 	</tr>
 </table>

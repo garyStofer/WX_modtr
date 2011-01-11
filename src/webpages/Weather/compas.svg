@@ -1,0 +1,77 @@
+﻿<?xml version="1.0" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+
+<svg  style="font-family: Ariel; font-size: large"  fill="blue"  onload="init_func()" version="1.1" xmlns="http://www.w3.org/2000/svg">
+<!-- <script type="text/javascript" language="javascript"> -->
+<script type="application/ecmascript"> 
+<![CDATA[
+  	var sec =0;
+  	
+function init_func(event)
+{
+	setInterval ('update()', 1000);  
+  	setTimeout("window.location.reload()",60000);
+  	//last_angle = getCookie("ANGL");
+  	//curr_angle = 48;
+  	//setCookie("ANGL",curr_anglel,365);
+
+};
+	
+function update() 
+{
+      var tic = document.getElementById("tic");
+      sec+=1; 
+//      tic.setAttribute("transform","rotate("+last_angle+",0,0)");
+      document.getElementById("updt").textContent ="Updated: "+sec+" Seconds ago";
+//      document.getElementById("msg").textContent ="cookie "+last_angle;
+
+};
+   ]]> 
+  </script>
+
+
+  <defs>
+    <radialGradient id="myRadialGrad"
+           fx="0.3" fy="0.3" r="0.5" spreadMethod="pad">
+          <stop offset="0"   stop-color="blue" stop-opacity="1"/>
+          <stop offset="1" stop-color="#000050" stop-opacity="1" />
+     </radialGradient>
+    </defs>
+
+<!-- global transform so that circles centers can be at 0,0 -->
+<g transform="translate(400,140)"> 
+    <!-- the outer ring -->
+	<circle  cx="0" cy="0" r="115" fill="silver"/> 
+	<!-- Cardinal heading ticks  
+	<line x1="0" y1="-115" x2="0" y2="115" style="stroke:black;stroke-width:2"/>
+	<line x1="-115" y1="0" x2="115" y2="0" style="stroke:black;stroke-width:2"/>
+	-->
+	<!-- The wind tic
+	<circle id="tic" cx="0" cy="-107" r="8" fill="red" transform="rotate(48)" /> 
+	k -->
+	
+
+	<!-- the center ball -->
+	<circle  cx="0" cy="0" r="100"  style="fill:url(#myRadialGrad)"/> 
+	<polygon id="tic" points="0,-90,-10,-110, 10,-110" style="fill:red;" transform="rotate(%l48 ) "/>
+	<!-- Cardinal heading indicators -->
+	<text x="102" y="5">E</text>
+	<text x="-115" y="5">W</text>
+	<text x="-6" y="-101">N</text>
+	<text x="-5" y="113">S</text>
+
+	<text text-anchor="middle" id="txt_dir"  x="0" y="-30"   style="font-size:large; stroke:lightgrey; fill:lightgrey;">%l48 °</text>
+	<text text-anchor="middle" id="txt_spd"  x="0" y="00"  style="font-size:large; stroke:lightgrey; fill:lightgrey;">%l49 mph</text>
+	<text text-anchor="middle" id="txt_gust" x="0" y="30"  style="font-size: large; stroke:lightgrey; fill:lightgrey;">Gust %l50 mph</text>
+	
+	<text  x="-380" y="-100" style="font-size: x-large">Station  %l41</text>
+	<text  x="-380" y="-60">Temperature %l52 °F </text>
+	<text  x="-380" y="-30">Dewpoint %l55 °F </text>
+	<text  x="-380" y="-00">Humidity %l54 %%</text>
+	<text  x="-380" y= "30">Pressure %l53 " Hg</text>
+	<text  x="-380" y= "60">Solar    %l51 W/m2</text>
+	<text  id="updt" x="-300" y="100"  style="font-size: small">Updated 0 Seconds ago</text>
+
+</g> 
+
+</svg>
