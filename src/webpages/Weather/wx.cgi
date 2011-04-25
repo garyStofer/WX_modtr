@@ -31,7 +31,8 @@ Wunderground</td><td>IP Address:</td>
 <td><input type=text size=3  maxlength=3 value="%k94" name="k94"/> </td>
 </tr>
 </table>
-<p><em>Default for&quot;www.weatherstation.wunderground.com&quot; is 38.102.136.125 </em></p>
+<p><em>Default for&quot;www.weatherstation.wunderground.com&quot; is 38.102.136.125 <br/> 
+Use all '0' to disable reporting.  </em></p>
 <input type="hidden" name="m" value="r"/>
 <input type="button" value="Set Station Params & Reset " onclick="doSubmit_wx_form(document.frmwx)"/>
 </form>

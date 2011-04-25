@@ -137,8 +137,16 @@ HTTP_ClientInit( void )
 	tcpServerNode.IPAddr.v[1] = appcfgGetc(APPCFG_WX_IP_ADDR1); //102
 	tcpServerNode.IPAddr.v[2] = appcfgGetc(APPCFG_WX_IP_ADDR2); //136
 	tcpServerNode.IPAddr.v[3] = appcfgGetc(APPCFG_WX_IP_ADDR3); //125
-	serPutRomString( (ROM char *) "\n\rUsing configured IP address for reporting"); 
-	smTcp = SM_HTTP_SEND_ARP;
+	if (tcpServerNode.IPAddr.v[0] ==0)
+	{
+		serPutRomString( (ROM char *) "\n\rNo IP address for reporting to Wundergroud"); 
+		smTcp = SM_HTTP_FINISHED;
+	}
+	else
+	{
+		serPutRomString( (ROM char *) "\n\rUsing configured IP address for reporting"); 
+		smTcp = SM_HTTP_SEND_ARP;
+	}
 #endif	
 }	
 /* Places the string into the TCP put queue as well as the serial output buffer is SerOut flag is set*/
@@ -459,12 +467,12 @@ HTTP_Client(void)
 	              	// the following formual gives MPH in 1/10 miles resolution
 	              	// MPH = wind_counts_per_sec  *2.25 /6 *10;
 	              	// or MPH = wind_counts_per_sec * 3.75 
-#ifdef AN_6POLES
-#define AN_CAL_FACTOR 3.75
-#else
-#ifdef AN_7POLES
-#define AN_CAL_FACTOR 3.214
-#endif 
+#if defined AN_6POLES
+	#define AN_CAL_FACTOR 3.75
+#elif  defined AN_7POLES
+	#define AN_CAL_FACTOR 3.214
+#else 
+ 	#error "Winspeed magnet poles not defined!" 
 #endif
 			
 					Wind_spd = Wind_spd * AN_CAL_FACTOR;				// Averaged wind speed in 1/10 of MPH since last update interval
@@ -500,9 +508,9 @@ HTTP_Client(void)
               	  	 	
               	  	 // device sensitiviti is 45mv/kpa, device has 0.2V offset at 15kpa, full range (115kpa) at 0.2v +4.5V = 4.7V
               	  	 // Kpa =  ( (Vout -0.2V) / 0.045v ) + 15kpa
-              	  	 // Vout = ADC * 5 / 1023;
+              	  	 // Vout = ADC * 5 / 1024;
               	  	 // 0.2v is 40.92 ADC counts or ~ 41 counts 
-              	  	 // (5/1023)/0.045 =0.10861301183 
+              	  	 // (5/1024)/0.045 =0.10861301183 
               	  	 
       	  			// do the math in float Kilo_pascal first and then convert to Inches mercury
               	  	 tmp = (AdcValues[2]-41) * 0.1086130118388182904;
@@ -546,7 +554,7 @@ HTTP_Client(void)
 		           // Iset = 227.3983e-6 * T°K / R_set (typical) 
 		           // °K = Iset*R_set/227.39;
 		           // Iset = V_Rload / R_load;
-		           // V_Rload = Adc * Vref / 1023 (Vref= 5.0) == ADC * 4.8875e-3
+		           // V_Rload = Adc * Vref / 1024 (Vref= 5.0) == ADC * 4.8875e-3
 		           // with R_set and R_load at 152O and 9Ko resp, V_Load = 13.4643mv per °K
 		           // with Vref at 5V and 10 bit ADC  T°K = ADC * ( 5/1023/13.4643)  == 0.363
 
@@ -571,11 +579,11 @@ HTTP_Client(void)
 	  				// formual:   RH_uncomp = (Vout/Vsup - 0.16 ) / 0.0062
 	  				// V_out = VAdc = ADC_Count * Vref/1023
 	  				// Vref == Vsup == 5.0 ... Therefore
-	  				//	RH_uncomp = (ADC_Count/1023-0.16 )/0.0062 
+	  				//	RH_uncomp = (ADC_Count/1024-0.16 )/0.0062 
 
 	  			
 	  				tmp = 0.16 * (1.0 -Hyg_cal_offs * 0.002);				// Offset calibration +-24%
-	  				tmp = ( AdcValues[4] / 1023.0  - tmp ) / 0.0062; 
+	  				tmp = ( AdcValues[4] / 1024.0  - tmp ) / 0.0062; 
 	  				tmp = tmp * (1.0 + Hyg_cal * 0.002);						// Gain calibartion  +- 24%
 	  				
 	  				
@@ -608,9 +616,9 @@ HTTP_Client(void)
 // The Dewpoint: 	  
 	// tmp holds RH as float 
 					
-	  				// Calculate DewPoint from Temp and humidity
-	  				// simple approximation formula:
-	  				// Td = Temp_c -(100-RH)/5
+	// Calculate DewPoint from Temp and humidity
+	// simple approximation formula:
+	// Td = Temp_c -(100-RH)/5
 	/*  				
 	  				tmp = (100 - tmp)/5;
 	  				tmp = Temp_c - tmp;
@@ -625,21 +633,27 @@ HTTP_Client(void)
      		1% < RH < 100%
      		0 °C < Td < 50 °C 
      
-	 Formula: 
-	 a = 17.271
-	 b = 237.7 °C
-	 Tc = Temp in Celsius
-	 Td = Dew point in Celsius
-	 RH = Relative Humidity
-	 Y = (a*Tc /(b+Tc)) + ln(RH/100)  
-	 Td = b * Y / (a - Y)
-	 */ 	
-	  Y = ((17.271 * Temp_c) / (237.7+Temp_c ))+ log(tmp/100);
-	  tmp = 237.7 * Y/(17.271-Y);
+					Formula: 
+					a = 17.271
+					b = 237.7 °C
+					Tc = Temp in Celsius
+					Td = Dew point in Celsius
+					RH = Relative Humidity
+					Y = (a*Tc /(b+Tc)) + ln(RH/100)  
+					Td = b * Y / (a - Y)
+					*/ 	
+					
+					 Y = ((17.271 * Temp_c) / (237.7+Temp_c ))+ log(tmp/100);
+					 tmp = 237.7 * Y/(17.271-Y);
 	  
 	  	  			T_dewptF  = (tmp*9/5+32)*10;		// convert to 1/10 deg F
 	 				Temp_F =((Temp_c*9/5)+32)*10; // Convert to °F
-               		smTcp =SM_HTTP_CONNECT; 	// reconnectd and send next set of parameters
+
+					if (tcpServerNode.IPAddr.v[0] !=0 )	// if user requested no HTTP reporting to Wunderground
+	              		smTcp =SM_HTTP_CONNECT; 		// reconnectd and send next set of parameters
+					else
+	  					tsecMsgSent = TickGetSec(); 	// just reload the timer and stay in the current state
+	     		
               }	  	 
            	 break;
            	 
