@@ -267,10 +267,8 @@ void fastUserProcess(void)
 void main(void)
 {
     static TICK8 t = 0;
-
-    //Set SWDTEN bit, this will enable the watch dog timer
-//    WDTCON_SWDTEN = 1;
-    aliveCntrMain = 0xff;   //Disable alive counter during initialization. Setting to 0xff disables it.
+    
+    WDTCON_SWDTEN = 0;  // disable watchdog timer
 
     //Initialize any application specific hardware.
     InitializeBoard();
@@ -309,7 +307,7 @@ void main(void)
     //First call appcfgCpuIOValues() and then only appcfgCpuIO()!!! This ensures the value are set, before enabling ports.
     appcfgCpuIOValues();    //Configure the CPU's I/O port pin default values
     appcfgCpuIO();          //Configure the CPU's I/O port pin directions - input or output
-    
+ 	
     appcfgADC();            //Configure ADC unit
     appcfgPWM();            //Configure PWM Channels
 
@@ -361,14 +359,19 @@ void main(void)
      * If a task needs very long time to do its job, it must broken
      * down into smaller pieces so that other tasks can have CPU time.
      */
+
+	LATF0 = 0;				// clear yellow LED
+	WDTCON_SWDTEN = 1;		// Enable Watchdog
     while(1)
     {
+        aliveCntrMain = 32;     //Reset if not services in 52.42ms x 32 = 2 seconds
 
-        aliveCntrMain = 38;     //Reset if not services in 52.42ms x 38 = 2 seconds
-
-        //Blink SYSTEM LED every second.
+        
+#ifdef NotUsed0001
+//Blink SYSTEM LED every second.
         if (appcfgGetc(APPCFG_SYSFLAGS) & APPCFG_SYSFLAGS_BLINKB6) 
 	    {
+   
             //Configure RB6 as output, and blink it every 500ms
             if ( TickGetDiff8bit(t) >= ((TICK8)TICKS_PER_SECOND / (TICK8)2) )
             {
@@ -390,6 +393,7 @@ void main(void)
 #endif                
             }
         }
+#endif
 
         //This task performs normal stack task including checking for incoming packet,
         //type of packet and calling appropriate stack entity to process it.

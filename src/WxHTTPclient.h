@@ -18,8 +18,12 @@
 extern void HTTP_Client(void);
 extern void HTTP_ClientInit( void );
 
-#define WX_UPLINK_INTERVAL  15   				// in seconds .. Windgust is taken within this periode
-#define AGV_INTERVAL		50					// e.g.  50=  50*15sec/60sec = 12.5min
+//#define WX_UPLINK_INTERVAL  15   				// in seconds .. Windgust is taken within this periode
+//#define AGV_INTERVAL		50					// e.g.  50=  50*15sec/60sec = 12.5min
+
+#define WX_UPLINK_INTERVAL  60   				// in seconds .. Windgust is taken within this periode
+#define AGV_INTERVAL		12					// e.g.  12 ==  12*WX_UPLINK_INTERVAL sec/60 sec = 12min
+
 
 extern BYTE Wind_counts[]; 			// updated by ISR every second  
 extern unsigned short Wind_spd;		// in 1/10 Statute Mile  

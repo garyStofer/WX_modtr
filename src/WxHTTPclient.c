@@ -1,6 +1,7 @@
 #include <string.h>
 #include "projdefs.h"
 #include "busser1.h"
+#include "net\delay.h"
 #include "net\tick.h"
 #include "net\helpers.h"
 #include "net\tcp.h"
@@ -13,6 +14,7 @@
 
 
 extern WORD getTCPMaxDataLenght( void);
+extern BYTE aliveCntrMain; 
 
 //TCP State machine
 typedef enum _TCP_CLIENT_STATE {
@@ -157,7 +159,7 @@ put_WX_param(ROM char const * pMsg, BOOL SerOut)
 	while ( b = *pMsg++)
 	{
 		TCPPut(tcpSocketUser, b);
-		if (SerOut)
+		if (SerOut && LATF1)		// LATCHed Port F1 inhibits serial out 
 			serPutByte(b);
  	} 
 }	 
@@ -208,7 +210,7 @@ put_WXparam_arg ( ROM char const * pMsg, WORD w, DECIMALS dec_places, BOOL SerOu
 	while ( b = strTmp[i++] ) 
 	{
 		TCPPut(tcpSocketUser, b);
-		if (SerOut)
+		if (SerOut && LATF1)// LATCHed Port F1 inhibits serial out 
 			serPutByte(b);
 	}	
 
@@ -220,6 +222,7 @@ void
 HTTP_Client(void)
 {
     static TICK16 tsecMsgSent;        //Time last message was sent
+    static char arp_failure = 0;
     char bu[17];
     BYTE b;
     WORD i;
@@ -229,6 +232,7 @@ HTTP_Client(void)
     
     TRISB_RB6 = 0;		// Make RB6 output -- System LED 		
    
+ 
  
     switch (smTcp) 
     {
@@ -246,17 +250,32 @@ HTTP_Client(void)
 #endif		    	
 
         case SM_HTTP_SEND_ARP:
+        	DelayMs(250);
+        	if ( arp_failure>= 45 )		// give up after n attempts of getting an address and reboot, 45 is 3 minutes
+        	{
+	        	serPutRomString( (ROM char *) "\n\r Issuing a WDT reset in HTTPClient");
+        		while(1) ; 		// this will force a watchdog timer timeout and reset the board
+          	}
+      
             if (ARPIsTxReady()) 
             {	
 	           // Clear MAC address first 
                 tcpServerNode.MACAddr.v[0] = tcpServerNode.MACAddr.v[1]= tcpServerNode.MACAddr.v[2] = tcpServerNode.MACAddr.v[3] = 0;
-			    
+			    ARPInit();
 			    //Send ARP request for given IP address
                 ARPResolve(&tcpServerNode.IPAddr);
                 tsecMsgSent = TickGetSec(); 				// take snapshot of time
                 smTcp = SM_HTTP_WAIT_ARP_RESOLVE;
             }
-                        
+            else
+            {
+	            LATB6 = 1;
+	            serPutRomString( (ROM char *) "\n\rARP not TX ready");
+	        	arp_failure++;
+	        } 
+            // Delay to see the error LED
+			DelayMs(250); 
+            LATB6 = 0; // clear error indication            
             break;
 
         case SM_HTTP_WAIT_ARP_RESOLVE:
@@ -267,7 +286,7 @@ HTTP_Client(void)
 					itoa(tcpServerNode.IPAddr.v[1],bu);serPutString(bu);serPutByte(':');
 					itoa(tcpServerNode.IPAddr.v[2],bu);serPutString(bu);serPutByte(':');
 					itoa(tcpServerNode.IPAddr.v[3],bu);serPutString(bu);
-					
+
 					// Start up via TCP_Finished so that all the reporting data gets initized 
 					smTcp = SM_HTTP_FINISHED;  
 					tsecMsgSent -= WX_UPLINK_INTERVAL; 	// take snapshot of time and make so that State Finished executes immediatly
@@ -277,12 +296,13 @@ HTTP_Client(void)
                	// if after 4 seconds ARP has not resolved, send request again
 	            if (TickGetSecDiff(tsecMsgSent) >= (TICK16)4)
 	            {
+		            serPutRomString( (ROM char *) "\n\rARP failed >4S");
 	            	smTcp = SM_HTTP_SEND_ARP;
 					LATB6 = 1; 		// indicate no connection via red LED  
 					// Note: upon first connect this always fails the first time around -- Not sure why ??
+					arp_failure++;
 	             }
           	}   	
-            
 	        break;    
 
 		case SM_HTTP_CONNECT:
@@ -290,16 +310,17 @@ HTTP_Client(void)
             tcpSocketUser = TCPConnect(&tcpServerNode,80);		// connect on HTTP port
 			tsecMsgSent = TickGetSec();
 			
-               //An error occurred during the TCPListen() function
-            if (tcpSocketUser == INVALID_SOCKET) 
-            {    
+            if (tcpSocketUser != INVALID_SOCKET) 
+            {
+	           smTcp = SM_HTTP_WAIT_CONNECTED; 
+	        }
+	        else //An error occurred during the TCPListen() function
+            {   
+	            serPutRomString( (ROM char *) "\n\rTCPConnect invalid socket"); 
 	            smTcp = SM_HTTP_SEND_ARP;		// connection failed, go back to beginning of connection
     			LATB6 = 1; 		// indicate no connection via red LED 
     		}
-            else
-            {
-            	smTcp = SM_HTTP_WAIT_CONNECTED;
-            }
+     
     		break;
             
         case SM_HTTP_WAIT_CONNECTED:
@@ -407,7 +428,7 @@ HTTP_Client(void)
                 }  
                 else // not PUT ready
                 {
-	              
+	              	serPutRomString( (ROM char *) "\n\rTCP not PutReady");
 	            }   
             }
             else 
@@ -415,6 +436,7 @@ HTTP_Client(void)
 		        // if there is no connection after 40 seconds go back and try to establish connection again
 		      if (TickGetSecDiff(tsecMsgSent) >= (TICK16)40)
               { 
+	               serPutRomString( (ROM char *) "\n\rTCP not connected >40sec");
 	               LATB6 = 1; // indicate no connection via red LED
 				   LATF0 = 1; // latch error in yellow led 
                    TCPDisconnect(tcpSocketUser);
@@ -426,8 +448,17 @@ HTTP_Client(void)
 
 
         case SM_HTTP_FINISHED: 		// Finished sending a report, now waiting for the next interval 
+        	  // when update interval has elapsed calculate next set of data and go to HTTP_Connect state again 
+        	  arp_failure = 0;		
               if (TickGetSecDiff(tsecMsgSent) >= WX_UPLINK_INTERVAL)	// every 15 seconds send a new data package 
-              { 
+              {
+	              
+	              	if (tcpServerNode.IPAddr.v[0] != 0 )// if user requested HTTP reporting to Wunderground
+	              		smTcp =SM_HTTP_CONNECT; 		// reconnectd and send next set of parameters
+					else
+	  					tsecMsgSent = TickGetSec(); 	// No reporting, stay in current state and only update the readings for the local display
+	  					
+	  					
 // to immediatly affect the next reading by the cal factors changed       
 //Temp_cal = appcfgGetc(APPCFG_WX_STATION_TEMP_CAL)-128;
 //Baro_cal = appcfgGetc(APPCFG_WX_STATION_BARO_CAL)-128;
@@ -503,8 +534,9 @@ HTTP_Client(void)
               	  	 	Wind_dir = 360;
               	  	 else if (Wind_dir < 0 ) 
               	  	 	Wind_dir = 0;
+              	  	 	
               	  	 Wind_dir = (Wind_dir+Wind_cal)%360;	
-   	  // The Barometer:	 	
+// The Barometer:	 	
               	  	 	
               	  	 // device sensitiviti is 45mv/kpa, device has 0.2V offset at 15kpa, full range (115kpa) at 0.2v +4.5V = 4.7V
               	  	 // Kpa =  ( (Vout -0.2V) / 0.045v ) + 15kpa
@@ -647,27 +679,26 @@ HTTP_Client(void)
 					 tmp = 237.7 * Y/(17.271-Y);
 	  
 	  	  			T_dewptF  = (tmp*9/5+32)*10;		// convert to 1/10 deg F
-	 				Temp_F =((Temp_c*9/5)+32)*10; // Convert to °F
+	 				Temp_F =((Temp_c*9/5)+32)*10; 		// Convert to °F
 
-					if (tcpServerNode.IPAddr.v[0] !=0 )	// if user requested no HTTP reporting to Wunderground
-	              		smTcp =SM_HTTP_CONNECT; 		// reconnectd and send next set of parameters
-					else
-	  					tsecMsgSent = TickGetSec(); 	// just reload the timer and stay in the current state
+
 	     		
               }	  	 
            	 break;
            	 
             
-  		default:					// we should never get here !
- 	
-                LATB6 = 1; 			// Turns on red System LED
+  		default:					       // we should never get here !
+  				serPutRomString( (ROM char *) "\n\rDefault clause reached!");
+ 				smTcp = SM_HTTP_SEND_ARP;  // go back to beginning of connection
+                LATB6 = 1; 			       // Turns on red System LED
+                LATF0 = 1; 				   // latch error in yellow led 
 
  			 break;
        	       		 
 	}
         
         
-	// read the response from Wunderground -- Needs to be the word "success" 
+	// read any response from Wunderground -- Needs to be the word "success" 
 	if( TCPIsGetReady(tcpSocketUser)  )
 	{
 // 		static char buff[100];		
@@ -678,7 +709,7 @@ HTTP_Client(void)
 		
 // Note: It appears that Wunderground always reports success as long as ID and Password is correct, even though the date 
 // or the data is misformed or missing. a "success" reply does not mean that the data is actually accepted into Wunderground
-// so no evaliation on the response is doen at this time.
+// so no evaluation on the response is doen at this time.
 //		buff[99] =0;
 //	   	serPutString(buff);
 	   	TCPDiscard( tcpSocketUser); 

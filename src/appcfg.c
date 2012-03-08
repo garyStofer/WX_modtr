@@ -482,14 +482,20 @@ void appcfgCpuIO(void)
     }
  
  	//If WX board is used, ensure C0 is input -- pulse signal from anemometer,
-  	if (appcfgGetc(APPCFG_XBRD_TYPE) == XBRD_TYPE_WX || appcfgGetc(APPCFG_XBRD_TYPE) == XBRD_TYPE_IOR5E) {
+  	if (appcfgGetc(APPCFG_XBRD_TYPE) == XBRD_TYPE_WX || appcfgGetc(APPCFG_XBRD_TYPE) == XBRD_TYPE_IOR5E) 
+	{
         val |= 0b00000001;
     }
-
     TRISC = val;
 
-    //Set PORT G and F direction bits
-    TRISF = appcfgGetc(APPCFG_TRISF);
+	val = appcfgGetc(APPCFG_TRISF);
+	if (appcfgGetc(APPCFG_XBRD_TYPE) == XBRD_TYPE_WX )
+	{
+		val &= 0xfe;  // bit 0 is yellow led
+		LATF0 = 1; // Yellow light on
+	}	
+    //Set PORT F direction bits
+    TRISF = val;
     
     //Ensure following TRISG ports are always inputs:
     //G4 = Is connected to IOCHRDY
