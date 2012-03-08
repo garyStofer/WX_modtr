@@ -1,0 +1,21 @@
+Weather Station settings for RT
+Cal:
+Temp -35
+Baro -20	0
+Hyg  -55	-77
+Sol  -50
+Dir 0
+IP address for Zimmer: 192.168.2.250 , Static not DHCP
+Netbios name: WXboard1
+Sation name & password: KCACORNI2, weather, elev: 550ft
+http login and password: admin, pw
+RS232: 57kbd, 8n1, bootup timeout: 3 seconds
+
+To disable weather reporting set WG IP address MSB to 00;  
+Set port F bit 0 for yellow led blink during boot process
+Set port F bit 1 to report weather params on the RS232 port
+each time a report is sent to wunderground. 
+
+Wires from wind post:
+Blue = wind speed; Green = wind dir, Orange = +5v, 
+2x White = GND
